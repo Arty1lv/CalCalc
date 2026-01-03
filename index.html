@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Food Plan MVP v14</title>
+  <title>Food Plan MVP v15</title>
   <style>
     body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;margin:0;padding:14px;background:#f6f7fb;color:#111}
     .top{background:#2f6fed;color:#fff;border-radius:14px;padding:14px}
@@ -869,8 +869,8 @@ function renderActivities(){
                 ${star}
               </div>
               <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-top:8px;">
-                <input type="number" min="0" step="5" inputmode="numeric" placeholder="ккал" data-act-kcal="${escapeHtml(a.id)}">
-                <input type="number" min="0" step="5" inputmode="numeric" placeholder="мин" data-act-min="${escapeHtml(a.id)}">
+                <input type="number" min="0" step="5" inputmode="numeric" placeholder="ккал" enterkeyhint="done" data-act-kcal="${escapeHtml(a.id)}">
+                <input type="number" min="0" step="5" inputmode="numeric" placeholder="мин" enterkeyhint="done" data-act-min="${escapeHtml(a.id)}">
               </div>
               <button class="btn" style="width:100%; margin-top:8px" data-act-add="${escapeHtml(a.id)}">Добавить</button>
             </div>
@@ -1807,15 +1807,22 @@ function wireActivityInputs(){
   const activitiesTab = document.getElementById("activities");
   if(!activitiesTab) return;
 
-  activitiesTab.addEventListener("keydown", async (ev) => {
-    if(ev.key !== "Enter") return;
-    const inp = ev.target.closest("[data-act-min],[data-act-kcal]");
+  activitiesTab.addEventListener("keydown", (ev) => {
+    // На мобильных клавиатурах Enter/Done часто работает как “Next”.
+    const inp = ev.target?.closest?.("[data-act-min],[data-act-kcal]");
     if(!inp) return;
+
+    const key = ev.key;
+    if(key !== "Enter" && key !== "Go" && key !== "Done" && ev.keyCode !== 13) return;
+
     ev.preventDefault();
+    ev.stopPropagation();
+    ev.stopImmediatePropagation?.();
+
     const id = inp.getAttribute(inp.hasAttribute("data-act-min") ? "data-act-min" : "data-act-kcal");
     const btn = activitiesTab.querySelector(`[data-act-add="${CSS.escape(id)}"]`);
     if(btn) btn.click();
-  });
+  }, true);
 
   activitiesTab.addEventListener("input", (ev) => {
     const minInp = ev.target.closest("[data-act-min]");
@@ -1895,22 +1902,33 @@ async function wireActions(){
       updatedAt: new Date().toISOString()
     });
 
+    // Обычный режим: сохранить запись дня и скачать backup, но не очищать текущий день.
     await exportBackupNow();
     await renderLogs();
 
     const dbg = await metaGet("debug.enabled");
-    if(dbg) await advanceAppDateIfDebug();
-    await refreshDateUI();
+    if(dbg){
+      await advanceAppDateIfDebug();
+      await refreshDateUI();
 
-    todayMealEntries = [];
-    todayActivityEntries = [];
-    document.getElementById("notes").value = "";
-    document.getElementById("steps").value = "";
+      // Очистка только в debug-режиме (когда искусственно наступают «следующие сутки»).
+      todayMealEntries = [];
+      todayActivityEntries = [];
+      document.getElementById("notes").value = "";
+      document.getElementById("steps").value = "";
+
+      await saveDraft();
+      renderFoodAll();
+      renderActivities();
+      updateTopTotals();
+      setStatus("Сохранено. debug: дата +1.");
+      return;
+    }
+
+    await refreshDateUI();
     await saveDraft();
-    renderFoodAll();
-    renderActivities();
     updateTopTotals();
-    setStatus(dbg ? "Сохранено. debug: дата +1." : "Сохранено.");
+    setStatus("Сохранено.");
   });
 
   document.getElementById("btnResetJournal").addEventListener("click", async () => {
