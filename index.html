@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Food Plan MVP v15</title>
+  <title>Food Plan MVP v16</title>
   <style>
     body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;margin:0;padding:14px;background:#f6f7fb;color:#111}
     .top{background:#2f6fed;color:#fff;border-radius:14px;padding:14px}
@@ -82,10 +82,17 @@
         <div class="big" id="todayNet">0</div>
         <div class="muted" id="nettoLabel"></div>
       </div>
-      <div class="pill">
-        <div class="muted">Вес</div>
-        <input id="weight" type="number" step="0.1" placeholder="55.0"/>
-      </div>
+      <div class="pill" id="trackerTile" style="min-width:200px">
+      <div class="muted">Белок</div>
+      <div class="big" id="uiProtein">0/0 г</div>
+      <div class="muted" style="margin-top:6px">Вода</div>
+      <div class="big" id="uiWater">0/2000 мл</div>
+      <!--<div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:8px">
+        <button class="btn secondary tiny" data-water-add="250">+250</button>
+        <button class="btn secondary tiny" data-water-add="500">+500</button>
+        <button class="btn secondary tiny" data-water-reset="1">Сброс</button>
+      </div>-->
+    </div>
       <div class="pill">
         <div class="muted">Шаги</div>
         <input id="steps" type="number" placeholder="6000"/>
@@ -273,6 +280,12 @@
       <div class="muted" style="margin-top:6px">BMR</div>
 
       <div class="grid2" style="margin-top:10px">
+          <div>
+            <div class="muted">Вес (кг)</div>
+            <input id="weight" type="number" step="0.1" placeholder="55.0">
+            <div class="muted" style="margin-top:6px">Нужен для BMR и цели белка.</div>
+          </div>
+
         <div>
           <div class="muted">Рост</div>
           <input id="setHeight" type="number" min="80" max="250" step="1" placeholder="152"/>
@@ -302,7 +315,19 @@
         <div class="muted" style="margin-top:6px">Напр. -400 = дефицит 400 ккал.</div>
       </div>
 
-      <div style="margin-top:10px">
+      
+        <div class="row2" style="margin-top:10px">
+          <div>
+            <div class="muted">Белок (г/кг)</div>
+            <input id="proteinPerKg" type="number" min="0.2" max="3" step="0.01" placeholder="0.83">
+          </div>
+          <div>
+            <div class="muted">Вода (мл/день)</div>
+            <input id="waterGoalMl" type="number" min="0" step="50" placeholder="2000">
+          </div>
+        </div>
+        <div class="muted" style="margin-top:6px">Цель белка: вес × г/кг.</div>
+<div style="margin-top:10px">
         <div class="muted">Режим нетто</div>
         <select id="nettoMode">
           <option value="nettonobmr">Съедено − спорт</option>
@@ -414,6 +439,8 @@ let statusTimer = null;
 window.favoritesEnabled = false;
 window.bmrMultiplier = 1.2;
 window.goalKcal = -400;
+window.proteinPerKg = 0.83;
+window.waterGoalMl = 2000;
 window.nettoMode = "nettonobmr";
 
 function openDb(){
@@ -493,7 +520,9 @@ async function metaSet(key, value){
 /* ---------- State ---------- */
 let meals;
 let activities;
-let todayMealEntries = []; // [{entryId, mealId}]
+let todayMealEntries = [];
+let todayWaterMl = 0;
+ // [{entryId, mealId}]
 let todayActivityEntries = []; // [{id, minutes}]
 
 function setStatus(msg){
@@ -550,6 +579,38 @@ function calcEatKcal(){
   }
   return Math.round(sum);
 }
+
+function calcEatProteinG(){
+  let sum = 0;
+  for(const e of (todayMealEntries || [])){
+    const m = getMealById(e.mealId);
+    if(m) sum += Number(m.proteinG || 0);
+  }
+  return Math.round(sum);
+}
+function calcFluidFromMealsMl(){
+  let sum = 0;
+  for(const e of (todayMealEntries || [])){
+    const m = getMealById(e.mealId);
+    if(m) sum += Number(m.fluidMl || 0);
+  }
+  return Math.round(sum);
+}
+function calcProteinTargetG(){
+  const w = Number(document.getElementById("weight")?.value || 0);
+  const ppk = Number(window.proteinPerKg ?? 0.83);
+  if(!Number.isFinite(w) || w <= 0) return 0;
+  if(!Number.isFinite(ppk) || ppk <= 0) return 0;
+  return Math.round(w * ppk);
+}
+function calcWaterGoalMl(){
+  const g = Number(window.waterGoalMl ?? 2000);
+  return (Number.isFinite(g) && g >= 0) ? Math.round(g) : 2000;
+}
+function calcWaterTotalMl(){
+  return Math.round(Number(todayWaterMl || 0) + calcFluidFromMealsMl());
+}
+
 function calcBurnKcalExercise(){
   let sum = 0;
   for(const e of (todayActivityEntries || [])){
@@ -622,6 +683,17 @@ function updateTopTotals(){
   document.getElementById("bmrInfo").textContent = basal ? `BMR: ${basal} (x${Number(window.bmrMultiplier||1).toFixed(2)})` : "";
   applyNettoMode(eat, burnExercise, basal, limit);
   updateLimitBar(eat, limit);
+
+  // Tracker: protein + water
+  const pEat = calcEatProteinG();
+  const pTarget = calcProteinTargetG();
+  const wTotal = calcWaterTotalMl();
+  const wGoal = calcWaterGoalMl();
+  const pEl = document.getElementById("uiProtein");
+  const wEl = document.getElementById("uiWater");
+  if(pEl) pEl.textContent = `${pEat}/${pTarget} г`;
+  if(wEl) wEl.textContent = `${wTotal}/${wGoal} мл`;
+
 }
 function cycleNettoMode(){
   const order = ["nettonobmr","nettowithbmr","consumedlimit","remaining"];
@@ -642,6 +714,7 @@ async function saveDraft(){
     date,
     todayMealEntries: todayMealEntries || [],
     todayActivityEntries: todayActivityEntries || [],
+    todayWaterMl: Number(todayWaterMl || 0),
     weight: document.getElementById("weight").value,
     steps: document.getElementById("steps").value,
     notes: document.getElementById("notes").value
@@ -677,6 +750,8 @@ async function loadDraft(){
 
     todayActivityEntries = Array.isArray(draft.todayActivityEntries) ? draft.todayActivityEntries : [];
 
+    todayWaterMl = Number(draft.todayWaterMl || 0);
+
     document.getElementById("weight").value = (draft.weight ?? "");
     document.getElementById("steps").value = (draft.steps ?? "");
     document.getElementById("notes").value = (draft.notes ?? "");
@@ -687,6 +762,7 @@ async function loadDraft(){
   } else {
     todayMealEntries = [];
     todayActivityEntries = [];
+    todayWaterMl = 0;
     document.getElementById("steps").value = "";
     document.getElementById("notes").value = "";
     document.getElementById("weight").value = (savedWeight != null) ? String(savedWeight) : "";
@@ -706,7 +782,8 @@ async function autoSaveDraftIfDateChanged(){
     (draft.steps && String(draft.steps).trim()) ||
     (draft.notes && String(draft.notes).trim()) ||
     (Array.isArray(draft.selectedMealIds) && draft.selectedMealIds.length) ||
-    (draft.snackCounts && Object.keys(draft.snackCounts).length);
+    (draft.snackCounts && Object.keys(draft.snackCounts).length) ||
+    (Number(draft.todayWaterMl || 0) > 0);
 
   if(autoSaveEnabled && hasAny){
     const mealEntries = Array.isArray(draft.todayMealEntries)
@@ -784,6 +861,7 @@ function mealCardHtml(m){
           <div style="font-weight:900">${escapeHtml(m.name)}</div>
           ${m.short ? `<div class="muted mealMeta">${escapeHtml(m.short)}</div>` : ``}
           ${m.ingredients ? `<div class="muted mealMeta">${escapeHtml(m.ingredients)}</div>` : ``}
+          ${(Number(m.proteinG||0)||Number(m.fluidMl||0)) ? `<div class="muted mealMeta">Б: ${escapeHtml(m.proteinG||0)} г • Ж: ${escapeHtml(m.fluidMl||0)} мл</div>` : ``}
         </div>
         <div style="text-align:right">
           <div class="kcal">${escapeHtml(m.calories)}</div>
@@ -823,7 +901,7 @@ function renderTodayByCategory(cat, todayListId){
       <div class="itemRow">
         <div>
           <div style="font-weight:900">${escapeHtml(m?.name ?? "??")}</div>
-          <div class="muted">${escapeHtml(m?.calories ?? 0)} ккал</div>
+          <div class="muted">${escapeHtml(m?.calories ?? 0)} ккал • Б ${escapeHtml(m?.proteinG ?? 0)} г • Ж ${escapeHtml(m?.fluidMl ?? 0)} мл</div>
         </div>
         <div>
           <button class="btn danger tiny" data-del-meal-entry="${escapeHtml(e.entryId)}">Удалить</button>
@@ -963,6 +1041,18 @@ function mealModalBody(meal){
       </div>
     </div>
 
+    <div class="row2" style="margin-top:10px">
+      <div>
+        <div class="muted">Белок (г/порция)</div>
+        <input id="mProtein" type="number" min="0" step="1" placeholder="0" value="${escapeHtml(meal?.proteinG ?? "")}">
+      </div>
+      <div>
+        <div class="muted">Жидкость (мл/порция)</div>
+        <input id="mFluid" type="number" min="0" step="10" placeholder="0" value="${escapeHtml(meal?.fluidMl ?? "")}">
+      </div>
+    </div>
+
+
     <div style="margin-top:10px">
       <div class="muted">Название</div>
       <input id="mName" placeholder="" value="${escapeHtml(meal?.name ?? "")}">
@@ -999,6 +1089,10 @@ async function openAddMealModal(defaultCategory){
       short: document.getElementById("mShort").value.trim(),
       ingredients: document.getElementById("mIng").value.trim(),
       prep: document.getElementById("mPrep").value.trim(),
+        proteinG: Math.round(Number(document.getElementById("mProtein")?.value || 0)),
+        fluidMl: Math.round(Number(document.getElementById("mFluid")?.value || 0)),
+      proteinG: Math.round(Number(document.getElementById("mProtein")?.value || 0)),
+      fluidMl: Math.round(Number(document.getElementById("mFluid")?.value || 0)),
       favorite: false,
       updatedAt: new Date().toISOString()
     };
@@ -1029,6 +1123,8 @@ async function openEditMealModal(mealId){
         short: document.getElementById("mShort").value.trim(),
         ingredients: document.getElementById("mIng").value.trim(),
         prep: document.getElementById("mPrep").value.trim(),
+        proteinG: Math.round(Number(document.getElementById("mProtein")?.value || 0)),
+        fluidMl: Math.round(Number(document.getElementById("mFluid")?.value || 0)),
         updatedAt: new Date().toISOString()
       };
 
@@ -1075,6 +1171,8 @@ async function openAddActivityModal(){
       id: uid("a"),
       name,
       kcalPerHour: Math.round(kph),
+      proteinG: Math.round(Number(document.getElementById("mProtein")?.value || 0)),
+      fluidMl: Math.round(Number(document.getElementById("mFluid")?.value || 0)),
       favorite: false,
       updatedAt: new Date().toISOString()
     });
@@ -1170,6 +1268,8 @@ async function loadSettings(){
   const sex = await metaGet("settings.sex");
   const bmrMult = await metaGet("settings.bmrMultiplier");
   const goalKcal = await metaGet("settings.goalKcal");
+  const proteinPerKg = await metaGet("settings.proteinPerKg");
+  const waterGoalMl = await metaGet("settings.waterGoalMl");
 
   let mode = await metaGet("settings.nettoMode");
   if(!mode){
@@ -1195,6 +1295,13 @@ async function loadSettings(){
   const goal = (goalKcal === null || goalKcal === undefined || goalKcal === "") ? -400 : Number(goalKcal);
   document.getElementById("goalKcal").value = Number.isFinite(goal) ? goal : -400;
 
+  const ppk = (proteinPerKg === null || proteinPerKg === undefined || proteinPerKg === "") ? 0.83 : Number(proteinPerKg);
+  document.getElementById("proteinPerKg").value = Number.isFinite(ppk) ? ppk : 0.83;
+
+  const wGoal = (waterGoalMl === null || waterGoalMl === undefined || waterGoalMl === "") ? 2000 : Number(waterGoalMl);
+  document.getElementById("waterGoalMl").value = (Number.isFinite(wGoal) && wGoal >= 0) ? Math.round(wGoal) : 2000;
+
+
   const okModes = ["nettonobmr","nettowithbmr","consumedlimit","remaining"];
   mode = okModes.includes(String(mode)) ? String(mode) : "nettonobmr";
   document.getElementById("nettoMode").value = mode;
@@ -1208,6 +1315,8 @@ async function loadSettings(){
   window.favoritesEnabled = !!favEnabled;
   window.bmrMultiplier = Number.isFinite(mult) ? mult : 1.2;
   window.goalKcal = Number.isFinite(goal) ? goal : -400;
+  window.proteinPerKg = Number.isFinite(ppk) ? ppk : 0.83;
+  window.waterGoalMl = (Number.isFinite(wGoal) && wGoal >= 0) ? Math.round(wGoal) : 2000;
   window.nettoMode = mode;
 
   const dbg = await metaGet("debug.enabled");
@@ -1222,6 +1331,8 @@ async function saveSettings(){
   const sex = String(document.getElementById("setSex").value || "female");
   const bmrMult = Number(document.getElementById("bmrMultiplier").value || 1.2);
   const goal = Number(document.getElementById("goalKcal").value || -400);
+  const proteinPerKg = Number(document.getElementById("proteinPerKg").value || 0.83);
+  const waterGoalMl = Number(document.getElementById("waterGoalMl").value || 2000);
   const mode = String(document.getElementById("nettoMode").value || "nettonobmr");
   const autoSave = document.getElementById("autoSaveOnNewDay").checked;
   const favEnabled = document.getElementById("favoritesEnabled").checked;
@@ -1230,6 +1341,8 @@ async function saveSettings(){
   if(!h || !a){ setStatus("Рост и возраст обязательны."); return; }
   if(!Number.isFinite(bmrMult) || bmrMult < 1 || bmrMult > 2){ setStatus("BMR множитель: 1.00–2.00"); return; }
   if(!Number.isFinite(goal) || goal < -3000 || goal > 3000){ setStatus("Цель: -3000…3000"); return; }
+  if(!Number.isFinite(proteinPerKg) || proteinPerKg < 0.2 || proteinPerKg > 3){ setStatus("Белок (г/кг): 0.20–3.00"); return; }
+  if(!Number.isFinite(waterGoalMl) || waterGoalMl < 0 || waterGoalMl > 10000){ setStatus("Вода (мл): 0–10000"); return; }
   const okModes = ["nettonobmr","nettowithbmr","consumedlimit","remaining"];
   if(!okModes.includes(mode)){ setStatus("Неизвестный режим."); return; }
 
@@ -1238,6 +1351,8 @@ async function saveSettings(){
   await metaSet("settings.sex", sex);
   await metaSet("settings.bmrMultiplier", bmrMult);
   await metaSet("settings.goalKcal", goal);
+  await metaSet("settings.proteinPerKg", proteinPerKg);
+  await metaSet("settings.waterGoalMl", Math.round(waterGoalMl));
   await metaSet("settings.nettoMode", mode);
   await metaSet("settings.autoSaveOnNewDay", autoSave);
   await metaSet("settings.favoritesEnabled", favEnabled);
@@ -1248,6 +1363,8 @@ async function saveSettings(){
   window.favoritesEnabled = favEnabled;
   window.bmrMultiplier = bmrMult;
   window.goalKcal = goal;
+  window.proteinPerKg = proteinPerKg;
+  window.waterGoalMl = Math.round(waterGoalMl);
   window.nettoMode = mode;
 
   renderFoodAll();
@@ -1269,7 +1386,7 @@ async function saveShopping(){
 /* ---------- Backup ---------- */
 async function buildBackupObject(){
   return {
-    schema: 14,
+    schema: 16,
     exportedAt: new Date().toISOString(),
     meals: await txGetAll("meals"),
     activities: await txGetAll("activities"),
@@ -1296,7 +1413,7 @@ async function exportBackupNow(){
 }
 async function importBackup(file){
   const obj = JSON.parse(await file.text());
-  if(!obj || ![1,2,3,4,5,6,7,8,9,10,11,12,13,14].includes(obj.schema)) throw new Error("Bad schema");
+  if(!obj || ![1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16].includes(obj.schema)) throw new Error("Bad schema");
   await txClear("meals");
   await txClear("activities");
   await txClear("logs");
@@ -1440,7 +1557,9 @@ async function ensureOffMealExists({barcode, product, category}){
     short,
     ingredients,
     prep: "",
-    favorite: false,
+    proteinG: Math.round(Number(document.getElementById("mProtein")?.value || 0)),
+      fluidMl: Math.round(Number(document.getElementById("mFluid")?.value || 0)),
+      favorite: false,
     updatedAt: new Date().toISOString(),
     source: "openfoodfacts",
     barcode: String(barcode)
@@ -1681,7 +1800,8 @@ function wireDraftInputs(){
     "weight","steps","notes",
     "setHeight","setAge","setSex",
     "bmrMultiplier","goalKcal","nettoMode",
-    "setAppTitle","autoSaveOnNewDay","favoritesEnabled"
+    "setAppTitle","autoSaveOnNewDay","favoritesEnabled",
+    "proteinPerKg","waterGoalMl"
   ].forEach(id => {
     const el = document.getElementById(id);
     if(!el) return;
@@ -1690,6 +1810,8 @@ function wireDraftInputs(){
       window.bmrMultiplier = Number(document.getElementById("bmrMultiplier")?.value) || window.bmrMultiplier || 1.2;
       window.goalKcal = Number(document.getElementById("goalKcal")?.value) || window.goalKcal || -400;
       window.nettoMode = String(document.getElementById("nettoMode")?.value) || window.nettoMode || "nettonobmr";
+      window.proteinPerKg = Number(document.getElementById("proteinPerKg")?.value) || window.proteinPerKg || 0.83;
+      window.waterGoalMl = Number(document.getElementById("waterGoalMl")?.value) || window.waterGoalMl || 2000;
       await saveDraft();
       updateTopTotals();
     };
@@ -1712,6 +1834,27 @@ function wireGlobalClicks(){
       await toggleTodayCol(key);
       return;
     }
+
+    const wAdd = ev.target.closest("[data-water-add]");
+    if(wAdd){
+      const add = Math.round(Number(wAdd.getAttribute("data-water-add") || 0));
+      if(add > 0){
+        todayWaterMl = Math.max(0, Math.round(Number(todayWaterMl || 0) + add));
+        await saveDraft();
+        updateTopTotals();
+        setStatus(`Вода: +${add} мл`);
+      }
+      return;
+    }
+    const wReset = ev.target.closest("[data-water-reset]");
+    if(wReset){
+      todayWaterMl = 0;
+      await saveDraft();
+      updateTopTotals();
+      setStatus("Вода: сброс.");
+      return;
+    }
+
 
     const favMeal = ev.target.closest("[data-fav-meal]");
     if(favMeal){
@@ -1808,7 +1951,6 @@ function wireActivityInputs(){
   if(!activitiesTab) return;
 
   activitiesTab.addEventListener("keydown", (ev) => {
-    // На мобильных клавиатурах Enter/Done часто работает как “Next”.
     const inp = ev.target?.closest?.("[data-act-min],[data-act-kcal]");
     if(!inp) return;
 
@@ -1884,6 +2026,14 @@ async function wireActions(){
     const limit = Math.round(basal + burnExercise + goal);
     const remaining = Math.round(limit - eat);
 
+    // Protein + water snapshot for log
+    const proteinEatG = calcEatProteinG();
+    const proteinTargetG = calcProteinTargetG();
+    const fluidFromMealsMl = calcFluidFromMealsMl();
+    const waterGoalMl = calcWaterGoalMl();
+    const waterMlExtra = Math.round(Number(todayWaterMl || 0));
+    const waterMl = Math.round(waterMlExtra + fluidFromMealsMl);
+
     await txPut("logs", {
       date,
       weight: document.getElementById("weight").value,
@@ -1898,11 +2048,17 @@ async function wireActions(){
       goalKcal: goal,
       limitCalories: limit,
       remainingCalories: remaining,
+      proteinEatG,
+      proteinTargetG,
+      waterMl,
+      waterGoalMl,
+      waterMlExtra,
+      fluidFromMealsMl,
       notes: document.getElementById("notes").value,
       updatedAt: new Date().toISOString()
     });
 
-    // Обычный режим: сохранить запись дня и скачать backup, но не очищать текущий день.
+    // В обычном режиме: сохранить запись дня и скачать backup, но НЕ очищать текущий день.
     await exportBackupNow();
     await renderLogs();
 
@@ -1911,12 +2067,11 @@ async function wireActions(){
       await advanceAppDateIfDebug();
       await refreshDateUI();
 
-      // Очистка только в debug-режиме (когда искусственно наступают «следующие сутки»).
       todayMealEntries = [];
       todayActivityEntries = [];
+      todayWaterMl = 0;
       document.getElementById("notes").value = "";
       document.getElementById("steps").value = "";
-
       await saveDraft();
       renderFoodAll();
       renderActivities();
