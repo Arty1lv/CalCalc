@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Food Plan MVP v16</title>
+  <title>Food Plan MVP v17</title>
   <style>
     body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;margin:0;padding:14px;background:#f6f7fb;color:#111}
     .top{background:#2f6fed;color:#fff;border-radius:14px;padding:14px}
@@ -59,6 +59,7 @@
         <div style="font-size:18px;font-weight:900" id="appTitle">Food Plan</div>
         <div class="mutedOnBlue" style="margin-top:4px">
           <span id="uiDate"></span> <span id="uiDebugTag"></span>
+          <input id="datePicker" type="date" class="hidden">
         </div>
       </div>
     </div>
@@ -103,7 +104,8 @@
   </div>
 
   <div class="tabs">
-    <button class="tabbtn active" data-tab="breakfast">Завтрак</button>
+    <button class="tabbtn active" data-tab="day">Сводка дня</button>
+    <button class="tabbtn" data-tab="breakfast">Завтрак</button>
     <button class="tabbtn" data-tab="lunch">Обед</button>
     <button class="tabbtn" data-tab="dinner">Ужин</button>
     <button class="tabbtn" data-tab="treat">Вкусняшки</button>
@@ -115,21 +117,54 @@
     <button class="tabbtn" data-tab="data">Данные</button>
   </div>
 
+
+
+  <div id="day" class="tab active">
+    <div class="tabHeader">
+      <div class="tabTitle">Сводка дня</div>
+      <div class="todayToggleRow">
+        <div class="muted">Долгое нажатие на дату в шапке — выбор дня.</div>
+      </div>
+    </div>
+
+    <div class="grid2 one" id="dayGrid">
+      <div class="todayBox">
+        <div style="font-weight:900">Завтрак</div>
+        <div id="dayBreakfastList" style="margin-top:10px"></div>
+      </div>
+      <div class="todayBox">
+        <div style="font-weight:900">Обед</div>
+        <div id="dayLunchList" style="margin-top:10px"></div>
+      </div>
+      <div class="todayBox">
+        <div style="font-weight:900">Ужин</div>
+        <div id="dayDinnerList" style="margin-top:10px"></div>
+      </div>
+      <div class="todayBox">
+        <div style="font-weight:900">Вкусняшки</div>
+        <div id="dayTreatList" style="margin-top:10px"></div>
+      </div>
+      <div class="todayBox">
+        <div style="font-weight:900">Перекусы</div>
+        <div id="daySnacksList" style="margin-top:10px"></div>
+      </div>
+      <div class="todayBox">
+        <div style="font-weight:900">Занятия</div>
+        <div id="dayActivitiesList" style="margin-top:10px"></div>
+      </div>
+    </div>
+  </div>
+
   <!-- Food tabs -->
-  <div id="breakfast" class="tab active">
+  <div id="breakfast" class="tab">
     <div class="tabHeader">
       <div class="tabTitle">Завтрак</div>
       <div class="todayToggleRow">
-        <button class="btn secondary" data-toggle-today="breakfast">Сегодня</button>
         <button class="btn secondary" data-add-meal="breakfast">Добавить</button>
       </div>
     </div>
-    <div class="grid2" id="breakfastGrid">
+    <div class="grid2 one" id="breakfastGrid">
       <div><div id="breakfastList"></div></div>
-      <div class="todayBox" id="breakfastTodayCol">
-        <div style="font-weight:900">Сегодня</div>
-        <div id="todayBreakfastList" style="margin-top:10px"></div>
-      </div>
     </div>
   </div>
 
@@ -137,16 +172,11 @@
     <div class="tabHeader">
       <div class="tabTitle">Обед</div>
       <div class="todayToggleRow">
-        <button class="btn secondary" data-toggle-today="lunch">Сегодня</button>
         <button class="btn secondary" data-add-meal="lunch">Добавить</button>
       </div>
     </div>
-    <div class="grid2" id="lunchGrid">
+    <div class="grid2 one" id="lunchGrid">
       <div><div id="lunchList"></div></div>
-      <div class="todayBox" id="lunchTodayCol">
-        <div style="font-weight:900">Сегодня</div>
-        <div id="todayLunchList" style="margin-top:10px"></div>
-      </div>
     </div>
   </div>
 
@@ -154,16 +184,11 @@
     <div class="tabHeader">
       <div class="tabTitle">Ужин</div>
       <div class="todayToggleRow">
-        <button class="btn secondary" data-toggle-today="dinner">Сегодня</button>
         <button class="btn secondary" data-add-meal="dinner">Добавить</button>
       </div>
     </div>
-    <div class="grid2" id="dinnerGrid">
+    <div class="grid2 one" id="dinnerGrid">
       <div><div id="dinnerList"></div></div>
-      <div class="todayBox" id="dinnerTodayCol">
-        <div style="font-weight:900">Сегодня</div>
-        <div id="todayDinnerList" style="margin-top:10px"></div>
-      </div>
     </div>
   </div>
 
@@ -171,16 +196,11 @@
     <div class="tabHeader">
       <div class="tabTitle">Вкусняшки</div>
       <div class="todayToggleRow">
-        <button class="btn secondary" data-toggle-today="treat">Сегодня</button>
         <button class="btn secondary" data-add-meal="treat">Добавить</button>
       </div>
     </div>
-    <div class="grid2" id="treatGrid">
+    <div class="grid2 one" id="treatGrid">
       <div><div id="treatList"></div></div>
-      <div class="todayBox" id="treatTodayCol">
-        <div style="font-weight:900">Сегодня</div>
-        <div id="todayTreatList" style="margin-top:10px"></div>
-      </div>
     </div>
   </div>
 
@@ -188,18 +208,13 @@
     <div class="tabHeader">
       <div class="tabTitle">Перекусы</div>
       <div class="todayToggleRow">
-        <button class="btn secondary" data-toggle-today="snacks">Сегодня</button>
         <button class="btn secondary" data-add-meal="snack">Добавить</button>
       </div>
     </div>
-    <div class="grid2" id="snacksGrid">
+    <div class="grid2 one" id="snacksGrid">
       <div>
         <div class="muted">Нажми “Съесть”, чтобы добавить в “Сегодня”.</div>
         <div id="snackList"></div>
-      </div>
-      <div class="todayBox" id="snacksTodayCol">
-        <div style="font-weight:900">Сегодня</div>
-        <div id="todaySnacksList" style="margin-top:10px"></div>
       </div>
     </div>
   </div>
@@ -208,19 +223,14 @@
     <div class="tabHeader">
       <div class="tabTitle">Занятия</div>
       <div class="todayToggleRow">
-        <button class="btn secondary" data-toggle-today="activities">Сегодня</button>
         <button class="btn secondary" id="btnAddActivity">Добавить</button>
       </div>
     </div>
 
-    <div class="grid2" id="activitiesGrid">
+    <div class="grid2 one" id="activitiesGrid">
       <div>
         <div class="muted" style="margin:6px 0">Введи ккал за сессию (или минуты) и нажми Enter / Добавить.</div>
         <div id="activityList"></div>
-      </div>
-      <div class="todayBox" id="activitiesTodayCol">
-        <div style="font-weight:900">Сегодня</div>
-        <div id="todayActivitiesList" style="margin-top:10px"></div>
       </div>
     </div>
   </div>
@@ -275,6 +285,10 @@
   </div>
 
   <div id="settings" class="tab">
+
+    
+
+
     <div class="card">
       <div style="font-weight:900">Настройки</div>
       <div class="muted" style="margin-top:6px">BMR</div>
@@ -386,7 +400,14 @@
     </div>
   </div>
 
-  <div id="data" class="tab">
+  <div id="data" class="tab"><div class="card" style="margin-top:10px">
+      <div style="font-weight:900">Импорт одной карточки</div>
+      <div class="muted" style="margin-top:6px">Вставь текст из “Экспорт” (одна строка JSON).</div>
+      <textarea id="singleImportText" placeholder='{"t":"meal","v":1,"data":{...}}' style="margin-top:10px"></textarea>
+      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px">
+        <button class="btn secondary" id="btnSingleImport">Импорт</button>
+      </div>
+    </div>
     <div class="grid2">
       <div class="card">
         <div style="font-weight:900">Импорт backup.json</div>
@@ -421,7 +442,9 @@
       <div id="modalBody"></div>
       <div class="actions">
         <button class="btn danger" id="modalDelete" style="display:none;margin-right:auto">Удалить</button>
+		<button class="btn secondary" id="modalExport" style="display:none;">Экспорт</button>
         <button class="btn secondary" id="modalCancel">Отмена</button>
+		
         <button class="btn" id="modalOk">OK</button>
       </div>
     </div>
@@ -458,6 +481,16 @@ function openDb(){
     req.onerror = () => reject(req.error);
   });
 }
+async function txGet(store, key){
+  const db = await openDb();
+  return new Promise((resolve) => {
+    const tx = db.transaction(store, "readonly");
+    const req = tx.objectStore(store).get(key);
+    req.onsuccess = () => resolve(req.result ?? null);
+    req.onerror = () => resolve(null);
+  });
+}
+
 async function txGetAll(store){
   const db = await openDb();
   return new Promise((resolve, reject) => {
@@ -522,6 +555,70 @@ let meals;
 let activities;
 let todayMealEntries = [];
 let todayWaterMl = 0;
+
+// View date (editable): all actions apply to the selected date
+let viewDateISO = null;
+function draftKey(iso){ return `draft:${iso}`; }
+
+function safeNum(x){
+  const n = Number(x);
+  return Number.isFinite(n) ? n : 0;
+}
+
+async function copyToClipboard(text){
+  const s = String(text ?? "");
+  try{
+    if(navigator.clipboard?.writeText){
+      await navigator.clipboard.writeText(s);
+      return true;
+    }
+  } catch(e){}
+
+  const ta = document.createElement("textarea");
+  ta.value = s;
+  ta.setAttribute("readonly", "");
+  ta.style.position = "fixed";
+  ta.style.left = "-9999px";
+  document.body.appendChild(ta);
+  ta.select();
+  try{ document.execCommand("copy"); } catch(e){}
+  ta.remove();
+  return true;
+}
+
+function buildMealSnapshot(m){
+  if(!m) return null;
+  return {
+    id: m.id,
+    category: m.category,
+    name: m.name,
+    calories: Math.round(safeNum(m.calories)),
+    proteinG: Math.round(safeNum(m.proteinG)),
+    fluidMl: Math.round(safeNum(m.fluidMl)),
+    kcalPer100g: (m.kcalPer100g === undefined || m.kcalPer100g === null || m.kcalPer100g === "") ? null : safeNum(m.kcalPer100g),
+    portionG: (m.portionG === undefined || m.portionG === null || m.portionG === "") ? null : safeNum(m.portionG)
+  };
+}
+
+function mealFromEntry(e){
+  const snap = e?.mealSnapshot || e?.snapshot || null;
+  if(snap) return snap;
+  const m = getMealById(e?.mealId);
+  return m ? buildMealSnapshot(m) : {id:e?.mealId ?? null, category:null, name:"??", calories:0, proteinG:0, fluidMl:0, kcalPer100g:null, portionG:null};
+}
+
+function buildActivitySnapshot(a){
+  if(!a) return null;
+  return { id: a.id, name: a.name, kcalPerHour: Math.round(safeNum(a.kcalPerHour)) };
+}
+
+function activityFromEntry(e){
+  const snap = e?.activitySnapshot || e?.snapshot || null;
+  if(snap) return snap;
+  const a = activities.find(x => x.id === e?.id);
+  return a ? buildActivitySnapshot(a) : {id:e?.id ?? null, name:"??", kcalPerHour:0};
+}
+
  // [{entryId, mealId}]
 let todayActivityEntries = []; // [{id, minutes}]
 
@@ -563,10 +660,23 @@ async function advanceAppDateIfDebug(){
   await metaSet("debug.dateISO", isoFromDate(dt));
 }
 async function refreshDateUI(){
-  const date = await getAppDateISO();
+  const todayISO = await getAppDateISO();
+  if(!viewDateISO) viewDateISO = todayISO;
+
   const dbg = await metaGet("debug.enabled");
-  document.getElementById("uiDate").textContent = date;
-  document.getElementById("uiDebugTag").textContent = dbg ? "debug" : "";
+
+  document.getElementById("uiDate").textContent = viewDateISO;
+
+  const tags = [];
+  if(dbg) tags.push("debug");
+  if(viewDateISO !== todayISO) tags.push("просмотр");
+  document.getElementById("uiDebugTag").textContent = tags.length ? ("(" + tags.join(", ") + ")") : "";
+
+  const top = document.querySelector(".top");
+  if(top) top.classList.toggle("past", viewDateISO !== todayISO);
+
+  const dp = document.getElementById("datePicker");
+  if(dp) dp.value = viewDateISO;
 }
 
 /* ---------- Calories ---------- */
@@ -574,8 +684,8 @@ function getMealById(id){ return meals.find(m => m.id === id); }
 function calcEatKcal(){
   let sum = 0;
   for(const e of (todayMealEntries || [])){
-    const m = getMealById(e.mealId);
-    if(m) sum += Number(m.calories || 0);
+    const m = mealFromEntry(e);
+    sum += safeNum(m?.calories);
   }
   return Math.round(sum);
 }
@@ -583,16 +693,16 @@ function calcEatKcal(){
 function calcEatProteinG(){
   let sum = 0;
   for(const e of (todayMealEntries || [])){
-    const m = getMealById(e.mealId);
-    if(m) sum += Number(m.proteinG || 0);
+    const m = mealFromEntry(e);
+    sum += safeNum(m?.proteinG);
   }
   return Math.round(sum);
 }
 function calcFluidFromMealsMl(){
   let sum = 0;
   for(const e of (todayMealEntries || [])){
-    const m = getMealById(e.mealId);
-    if(m) sum += Number(m.fluidMl || 0);
+    const m = mealFromEntry(e);
+    sum += safeNum(m?.fluidMl);
   }
   return Math.round(sum);
 }
@@ -614,9 +724,8 @@ function calcWaterTotalMl(){
 function calcBurnKcalExercise(){
   let sum = 0;
   for(const e of (todayActivityEntries || [])){
-    const a = activities.find(x => x.id === e.id);
-    if(!a) continue;
-    sum += (Number(a.kcalPerHour || 0) * Number(e.minutes || 0) / 60);
+    const a = activityFromEntry(e);
+    sum += (safeNum(a?.kcalPerHour) * safeNum(e?.minutes) / 60);
   }
   return Math.round(sum);
 }
@@ -709,17 +818,17 @@ function cycleNettoMode(){
 
 /* ---------- Draft ---------- */
 async function saveDraft(){
-  const date = await getAppDateISO();
+  const date = viewDateISO || await getAppDateISO();
   const draft = {
     date,
-    todayMealEntries: todayMealEntries || [],
-    todayActivityEntries: todayActivityEntries || [],
+    todayMealEntries: Array.from(todayMealEntries || []),
+    todayActivityEntries: Array.from(todayActivityEntries || []),
     todayWaterMl: Number(todayWaterMl || 0),
     weight: document.getElementById("weight").value,
     steps: document.getElementById("steps").value,
     notes: document.getElementById("notes").value
   };
-  await metaSet("draft", draft);
+  await metaSet(draftKey(date), draft);
 }
 async function migrateOldDraftToMealEntries(draft){
   const out = [];
@@ -739,107 +848,79 @@ async function migrateOldDraftToMealEntries(draft){
   }
   return out;
 }
+function normalizeMealEntries(entries){
+  const arr = Array.isArray(entries) ? entries : [];
+  return arr.map(e => {
+    if(!e) return null;
+    const entryId = e.entryId || uid("e");
+    const mealId = e.mealId || e.id || null;
+    const snap = e.mealSnapshot || e.snapshot || (mealId ? buildMealSnapshot(getMealById(mealId)) : null);
+    return { ...e, entryId, mealId, mealSnapshot: snap };
+  }).filter(Boolean);
+}
+
+function normalizeActivityEntries(entries){
+  const arr = Array.isArray(entries) ? entries : [];
+  return arr.map(e => {
+    if(!e) return null;
+    const id = e.id || e.actId || e.activityId || null;
+    const minutes = Math.round(safeNum(e.minutes));
+    const snap = e.activitySnapshot || e.snapshot || (id ? buildActivitySnapshot(activities.find(x=>x.id===id)) : null);
+    return { ...e, id, minutes, activitySnapshot: snap };
+  }).filter(Boolean);
+}
+
+async function migrateLegacyDraftOnce(){
+  const legacy = await metaGet("draft");
+  if(!legacy || !legacy.date) return;
+  const key = draftKey(legacy.date);
+  const existing = await metaGet(key);
+  if(existing) return;
+  await metaSet(key, legacy);
+  await metaSet("draft", null);
+}
+
 async function loadDraft(){
-  const draft = await metaGet("draft");
-  const date = await getAppDateISO();
   const savedWeight = await metaGet("profile.weight");
+  const date = viewDateISO || await getAppDateISO();
 
+  const draft = await metaGet(draftKey(date));
   if(draft && draft.date === date){
-    if(Array.isArray(draft.todayMealEntries)) todayMealEntries = draft.todayMealEntries;
-    else todayMealEntries = await migrateOldDraftToMealEntries(draft);
+    if(Array.isArray(draft.todayMealEntries)) todayMealEntries = normalizeMealEntries(draft.todayMealEntries);
+    else todayMealEntries = normalizeMealEntries(await migrateOldDraftToMealEntries(draft));
 
-    todayActivityEntries = Array.isArray(draft.todayActivityEntries) ? draft.todayActivityEntries : [];
-
+    todayActivityEntries = normalizeActivityEntries(draft.todayActivityEntries);
     todayWaterMl = Number(draft.todayWaterMl || 0);
 
     document.getElementById("weight").value = (draft.weight ?? "");
     document.getElementById("steps").value = (draft.steps ?? "");
     document.getElementById("notes").value = (draft.notes ?? "");
-
-    if(!String(document.getElementById("weight").value || "").trim() && savedWeight != null){
-      document.getElementById("weight").value = String(savedWeight);
-    }
   } else {
-    todayMealEntries = [];
-    todayActivityEntries = [];
-    todayWaterMl = 0;
-    document.getElementById("steps").value = "";
-    document.getElementById("notes").value = "";
-    document.getElementById("weight").value = (savedWeight != null) ? String(savedWeight) : "";
+    const log = await txGet("logs", date);
+    if(log){
+      todayMealEntries = normalizeMealEntries(log.mealEntries || []);
+      todayActivityEntries = normalizeActivityEntries(log.activityEntries || []);
+      todayWaterMl = Number(log.waterMlExtra || 0);
+
+      document.getElementById("weight").value = (log.weight ?? "");
+      document.getElementById("steps").value = (log.steps ?? "");
+      document.getElementById("notes").value = (log.notes ?? "");
+    } else {
+      todayMealEntries = [];
+      todayActivityEntries = [];
+      todayWaterMl = 0;
+      document.getElementById("steps").value = "";
+      document.getElementById("notes").value = "";
+    }
+  }
+
+  if(!String(document.getElementById("weight").value || "").trim() && savedWeight !== null && savedWeight !== undefined){
+    document.getElementById("weight").value = String(savedWeight);
   }
 }
 async function autoSaveDraftIfDateChanged(){
-  const draft = await metaGet("draft");
-  const todayISO = await getAppDateISO();
-  if(!draft || !draft.date || draft.date === todayISO) return;
-
-  const autoSaveSetting = await metaGet("settings.autoSaveOnNewDay");
-  const autoSaveEnabled = (autoSaveSetting === null) ? true : !!autoSaveSetting;
-
-  const hasAny =
-    (Array.isArray(draft.todayMealEntries) && draft.todayMealEntries.length) ||
-    (Array.isArray(draft.todayActivityEntries) && draft.todayActivityEntries.length) ||
-    (draft.steps && String(draft.steps).trim()) ||
-    (draft.notes && String(draft.notes).trim()) ||
-    (Array.isArray(draft.selectedMealIds) && draft.selectedMealIds.length) ||
-    (draft.snackCounts && Object.keys(draft.snackCounts).length) ||
-    (Number(draft.todayWaterMl || 0) > 0);
-
-  if(autoSaveEnabled && hasAny){
-    const mealEntries = Array.isArray(draft.todayMealEntries)
-      ? draft.todayMealEntries
-      : await migrateOldDraftToMealEntries(draft);
-
-    let eat = 0;
-    for(const e of (mealEntries || [])){
-      const m = meals.find(x => x.id === e.mealId);
-      if(m) eat += Number(m.calories || 0);
-    }
-    eat = Math.round(eat);
-
-    let burnExercise = 0;
-    for(const e of (draft.todayActivityEntries || [])){
-      const a = activities.find(x => x.id === e.id);
-      if(!a) continue;
-      burnExercise += (Number(a.kcalPerHour || 0) * Number(e.minutes || 0) / 60);
-    }
-    burnExercise = Math.round(burnExercise);
-
-    const weight = Number(draft.weight || 0) || 55;
-    const basal = calcBasalKcalPerDayFrom(weight);
-    const burnTotal = burnExercise + basal;
-    const goal = Number(window.goalKcal || 0);
-    const limit = Math.round(basal + burnExercise + goal);
-    const remaining = Math.round(limit - eat);
-
-    await txPut("logs", {
-      date: draft.date,
-      weight: String(draft.weight ?? ""),
-      steps: String(draft.steps ?? ""),
-      mealEntries: mealEntries || [],
-      activityEntries: Array.from(draft.todayActivityEntries || []),
-      eatCalories: eat,
-      burnExerciseCalories: burnExercise,
-      basalCalories: basal,
-      burnCalories: burnTotal,
-      netCalories: eat - burnTotal,
-      goalKcal: goal,
-      limitCalories: limit,
-      remainingCalories: remaining,
-      notes: String(draft.notes ?? ""),
-      autoSaved: true,
-      updatedAt: new Date().toISOString()
-    });
-  }
-
-  await metaSet("draft", {
-    date: todayISO,
-    todayMealEntries: [],
-    todayActivityEntries: [],
-    weight: document.getElementById("weight").value,
-    steps: "",
-    notes: ""
-  });
+  // v17: drafts are stored per date (meta: draft:YYYY-MM-DD)
+  return;
 }
 
 /* ---------- Render food ---------- */
@@ -885,8 +966,10 @@ function renderMealCategory(cat, listId){
 }
 function renderTodayByCategory(cat, todayListId){
   const root = document.getElementById(todayListId);
+  if(!root) return;
+
   const entries = (todayMealEntries || []).filter(e => {
-    const m = getMealById(e.mealId);
+    const m = mealFromEntry(e);
     return m && m.category === cat;
   });
 
@@ -896,7 +979,7 @@ function renderTodayByCategory(cat, todayListId){
   }
 
   root.innerHTML = entries.map(e => {
-    const m = getMealById(e.mealId);
+    const m = mealFromEntry(e);
     return `
       <div class="itemRow">
         <div>
@@ -911,17 +994,46 @@ function renderTodayByCategory(cat, todayListId){
   }).join("");
 }
 function renderFoodAll(){
-  renderMealCategory("breakfast","breakfastList");
-  renderMealCategory("lunch","lunchList");
-  renderMealCategory("dinner","dinnerList");
-  renderMealCategory("treat","treatList");
-  renderMealCategory("snack","snackList");
+  renderMealCategory("breakfast", "breakfastList");
+  renderMealCategory("lunch", "lunchList");
+  renderMealCategory("dinner", "dinnerList");
+  renderMealCategory("treat", "treatList");
+  renderMealCategory("snack", "snackList");
+}
 
-  renderTodayByCategory("breakfast","todayBreakfastList");
-  renderTodayByCategory("lunch","todayLunchList");
-  renderTodayByCategory("dinner","todayDinnerList");
-  renderTodayByCategory("treat","todayTreatList");
-  renderTodayByCategory("snack","todaySnacksList");
+function renderDayActivities(){
+  const root = document.getElementById("dayActivitiesList");
+  if(!root) return;
+
+  if(!(todayActivityEntries || []).length){
+    root.innerHTML = `<div class="muted">Пока нет.</div>`;
+    return;
+  }
+
+  root.innerHTML = (todayActivityEntries || []).map((e, idx) => {
+    const a = activityFromEntry(e);
+    const burn = Math.round(safeNum(a?.kcalPerHour) * safeNum(e?.minutes) / 60);
+    return `
+      <div class="itemRow">
+        <div>
+          <div style="font-weight:900">${escapeHtml(a?.name ?? "??")}</div>
+          <div class="muted">${escapeHtml(e.minutes)} мин • ${burn} ккал</div>
+        </div>
+        <div>
+          <button class="btn danger tiny" data-del-act-idx="${idx}">Удалить</button>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+function renderDaySummary(){
+  renderTodayByCategory("breakfast", "dayBreakfastList");
+  renderTodayByCategory("lunch", "dayLunchList");
+  renderTodayByCategory("dinner", "dayDinnerList");
+  renderTodayByCategory("treat", "dayTreatList");
+  renderTodayByCategory("snack", "daySnacksList");
+  renderDayActivities();
 }
 
 /* ---------- Activities ---------- */
@@ -959,32 +1071,35 @@ function renderActivities(){
   }
 
   const todayEl = document.getElementById("todayActivitiesList");
-  if(!todayActivityEntries.length){
-    todayEl.innerHTML = `<div class="muted">Пока нет.</div>`;
-  } else {
-    todayEl.innerHTML = todayActivityEntries.map((e, idx) => {
-      const a = activities.find(x => x.id === e.id);
-      const burn = a ? Math.round(Number(a.kcalPerHour || 0) * Number(e.minutes || 0) / 60) : 0;
-      return `
-        <div class="itemRow">
-          <div>
-            <div style="font-weight:900">${escapeHtml(a?.name ?? "??")}</div>
-            <div class="muted">${escapeHtml(e.minutes)} мин • ${burn} ккал</div>
+  if(todayEl){
+    if(!todayActivityEntries.length){
+      todayEl.innerHTML = `<div class="muted">Пока нет.</div>`;
+    } else {
+      todayEl.innerHTML = todayActivityEntries.map((e, idx) => {
+        const a = activityFromEntry(e);
+        const burn = Math.round(safeNum(a?.kcalPerHour) * safeNum(e?.minutes) / 60);
+        return `
+          <div class="itemRow">
+            <div>
+              <div style="font-weight:900">${escapeHtml(a?.name ?? "??")}</div>
+              <div class="muted">${escapeHtml(e.minutes)} мин • ${burn} ккал</div>
+            </div>
+            <div>
+              <button class="btn danger tiny" data-del-act-idx="${idx}">Удалить</button>
+            </div>
           </div>
-          <div>
-            <button class="btn danger tiny" data-del-act-idx="${idx}">Удалить</button>
-          </div>
-        </div>
-      `;
-    }).join("");
+        `;
+      }).join("");
+    }
   }
 }
 
 /* ---------- Modal ---------- */
 let modalOnOk = null;
 let modalOnDelete = null;
+let modalOnExport = null;
 
-function openModal(title, bodyHtml, okText="OK", showDelete=false, onOk=null, onDelete=null){
+function openModal(title, bodyHtml, okText="OK", showDelete=false, onOk=null, onDelete=null, onExport=null){
   document.getElementById("modalTitle").textContent = title;
   document.getElementById("modalBody").innerHTML = bodyHtml;
   document.getElementById("modalOk").textContent = okText;
@@ -994,6 +1109,9 @@ function openModal(title, bodyHtml, okText="OK", showDelete=false, onOk=null, on
 
   const delBtn = document.getElementById("modalDelete");
   delBtn.style.display = showDelete ? "inline-block" : "none";
+  const expBtn = document.getElementById("modalExport");
+  expBtn.style.display = onExport ? "inline-block" : "none";
+  modalOnExport = onExport;
 
   document.getElementById("modalBack").style.display = "flex";
 }
@@ -1002,7 +1120,31 @@ function closeModal(){
   document.getElementById("modalBody").innerHTML = "";
   modalOnOk = null;
   modalOnDelete = null;
+  modalOnExport = null;
 }
+function showDatePicker(){
+  const dp = document.getElementById("datePicker");
+  if(!dp) return;
+  try{ if(dp.showPicker) dp.showPicker(); else dp.click(); } catch(e){ dp.click(); }
+}
+
+async function applyViewDate(newISO){
+  const iso = String(newISO || "").trim();
+  if(!iso) return;
+
+  if(viewDateISO) await saveDraft();
+  viewDateISO = iso;
+
+  await refreshDateUI();
+  await loadDraft();
+
+  renderFoodAll();
+  renderDaySummary();
+  renderActivities();
+  renderDaySummary();
+  updateTopTotals();
+}
+
 function wireModalButtons(){
   document.getElementById("modalCancel").addEventListener("click", closeModal);
   document.getElementById("modalBack").addEventListener("click", (e) => {
@@ -1013,6 +1155,11 @@ function wireModalButtons(){
     const res = await modalOnOk();
     if(res !== false) closeModal();
   });
+  document.getElementById("modalExport").addEventListener("click", async () => {
+    if(!modalOnExport) return;
+    await modalOnExport();
+  });
+
   document.getElementById("modalDelete").addEventListener("click", async () => {
     if(!modalOnDelete) return;
     if(!confirm("Удалить?")) return;
@@ -1038,6 +1185,17 @@ function mealModalBody(meal){
       <div>
         <div class="muted">Ккал (порция)</div>
         <input id="mKcal" type="number" min="1" step="1" placeholder="100" value="${escapeHtml(meal?.calories ?? "")}">
+      </div>
+    </div>
+
+    <div class="row2" style="margin-top:10px">
+      <div>
+        <div class="muted">Ккал / 100 г</div>
+        <input id="mKcal100" type="number" min="0" step="1" placeholder="250" value="${escapeHtml(meal?.kcalPer100g ?? "")}">
+      </div>
+      <div>
+        <div class="muted">Вес порции (г)</div>
+        <input id="mPortionG" type="number" min="0" step="1" placeholder="150" value="${escapeHtml(meal?.portionG ?? "")}">
       </div>
     </div>
 
@@ -1075,40 +1233,62 @@ function mealModalBody(meal){
   `;
 }
 async function openAddMealModal(defaultCategory){
-  openModal("Добавить блюдо", mealModalBody({category: defaultCategory}), "Сохранить", false, async () => {
-    const name = document.getElementById("mName").value.trim();
-    const calories = Number(document.getElementById("mKcal").value);
-    if(!name){ setStatus("Название обязательно."); return false; }
-    if(!Number.isFinite(calories) || calories <= 0){ setStatus("Ккал должны быть > 0."); return false; }
+  openModal(
+    "Добавить блюдо",
+    mealModalBody({category: defaultCategory}),
+    "Добавить",
+    false,
+    async () => {
+      const name = document.getElementById("mName").value.trim();
+      const calories = Number(document.getElementById("mKcal").value);
+      if(!name){ setStatus("Название обязательно."); return false; }
+      if(!Number.isFinite(calories) || calories <= 0){ setStatus("Ккал должны быть > 0."); return false; }
 
-    const meal = {
-      id: uid("m"),
-      category: document.getElementById("mCat").value,
-      name,
-      calories: Math.round(calories),
-      short: document.getElementById("mShort").value.trim(),
-      ingredients: document.getElementById("mIng").value.trim(),
-      prep: document.getElementById("mPrep").value.trim(),
-        proteinG: Math.round(Number(document.getElementById("mProtein")?.value || 0)),
-        fluidMl: Math.round(Number(document.getElementById("mFluid")?.value || 0)),
-      proteinG: Math.round(Number(document.getElementById("mProtein")?.value || 0)),
-      fluidMl: Math.round(Number(document.getElementById("mFluid")?.value || 0)),
-      favorite: false,
-      updatedAt: new Date().toISOString()
-    };
+      const meal = {
+        id: uid("m"),
+        category: document.getElementById("mCat").value,
+        name,
+        calories: Math.round(calories),
+        short: document.getElementById("mShort").value.trim(),
+        ingredients: document.getElementById("mIng").value.trim(),
+        prep: document.getElementById("mPrep").value.trim(),
+        proteinG: Math.round(Number(document.getElementById("mProtein").value || 0)),
+        fluidMl: Math.round(Number(document.getElementById("mFluid").value || 0)),
+        favorite: false,
+        updatedAt: new Date().toISOString()
+      };
 
-    await txPut("meals", meal);
-    meals = await txGetAll("meals");
-    renderFoodAll();
-    updateTopTotals();
-    setStatus("Сохранено.");
-  });
+      const k100 = String(document.getElementById("mKcal100")?.value ?? "").trim();
+      const g = String(document.getElementById("mPortionG")?.value ?? "").trim();
+      if(k100){
+        const n = Number(k100);
+        if(Number.isFinite(n) && n > 0) meal.kcalPer100g = Math.round(n);
+      }
+      if(g){
+        const n = Number(g);
+        if(Number.isFinite(n) && n > 0) meal.portionG = Math.round(n);
+      }
+
+      await txPut("meals", meal);
+      meals = await txGetAll("meals");
+      renderFoodAll();
+      renderDaySummary();
+      updateTopTotals();
+      setStatus("Добавлено.");
+    }
+  );
+
+  installMealKcalAutocalc();
 }
 async function openEditMealModal(mealId){
   const meal = meals.find(x => x.id === mealId);
   if(!meal) return;
 
-  openModal("Редактировать блюдо", mealModalBody(meal), "Сохранить", true,
+  openModal(
+    "Редактировать блюдо",
+    mealModalBody(meal),
+    "Сохранить",
+    true,
     async () => {
       const name = document.getElementById("mName").value.trim();
       const calories = Number(document.getElementById("mKcal").value);
@@ -1123,28 +1303,103 @@ async function openEditMealModal(mealId){
         short: document.getElementById("mShort").value.trim(),
         ingredients: document.getElementById("mIng").value.trim(),
         prep: document.getElementById("mPrep").value.trim(),
-        proteinG: Math.round(Number(document.getElementById("mProtein")?.value || 0)),
-        fluidMl: Math.round(Number(document.getElementById("mFluid")?.value || 0)),
+        proteinG: Math.round(Number(document.getElementById("mProtein").value || 0)),
+        fluidMl: Math.round(Number(document.getElementById("mFluid").value || 0)),
         updatedAt: new Date().toISOString()
       };
+
+      const k100 = String(document.getElementById("mKcal100")?.value ?? "").trim();
+      const g = String(document.getElementById("mPortionG")?.value ?? "").trim();
+      if(k100){
+        const n = Number(k100);
+        if(Number.isFinite(n) && n > 0) updated.kcalPer100g = Math.round(n);
+      } else {
+        delete updated.kcalPer100g;
+      }
+      if(g){
+        const n = Number(g);
+        if(Number.isFinite(n) && n > 0) updated.portionG = Math.round(n);
+      } else {
+        delete updated.portionG;
+      }
 
       await txPut("meals", updated);
       meals = await txGetAll("meals");
       renderFoodAll();
+      renderDaySummary();
       updateTopTotals();
       setStatus("Сохранено.");
     },
     async () => {
       await txDelete("meals", meal.id);
-      todayMealEntries = (todayMealEntries || []).filter(e => e.mealId !== meal.id);
-      await saveDraft();
       meals = await txGetAll("meals");
       renderFoodAll();
+      renderDaySummary();
       updateTopTotals();
       setStatus("Удалено.");
+    },
+    async () => {
+      await copyToClipboard(JSON.stringify({t:"meal", v:1, data: meal}));
+      setStatus("Экспортировано в буфер.");
     }
   );
+
+  installMealKcalAutocalc();
 }
+
+function installMealKcalAutocalc(){
+  const kcalPortion = document.getElementById("mKcal");
+  const kcal100 = document.getElementById("mKcal100");
+  const portionG = document.getElementById("mPortionG");
+  if(!kcalPortion || !kcal100 || !portionG) return;
+
+  const read = (el) => {
+    const s = String(el.value ?? "").trim();
+    if(!s) return null;
+    const n = Number(s);
+    return Number.isFinite(n) ? n : null;
+  };
+  const writeInt = (el, v) => {
+    if(v === null || v === undefined || !Number.isFinite(v)) return;
+    el.value = String(Math.round(v));
+  };
+
+  const recompute = () => {
+    const kp = read(kcalPortion);
+    const k100 = read(kcal100);
+    const g = read(portionG);
+
+    // If kcal/portion missing but k100 and grams exist -> compute kcal/portion
+    if(kp === null && k100 !== null && g !== null && g > 0){
+      writeInt(kcalPortion, k100 * g / 100);
+      return;
+    }
+
+    // If kcal/portion exists: treat it as master and fill missing one of (k100, grams)
+    if(kp !== null){
+      if(k100 === null && g !== null && g > 0){
+        writeInt(kcal100, kp * 100 / g);
+        return;
+      }
+      if(g === null && k100 !== null && k100 > 0){
+        writeInt(portionG, kp * 100 / k100);
+        return;
+      }
+    }
+  };
+
+  const handler = (ev) => {
+    if(ev.type === "keyup" && ev.key !== "Enter") return;
+    recompute();
+  };
+
+  [kcalPortion, kcal100, portionG].forEach(el => {
+    el.addEventListener("blur", handler);
+    el.addEventListener("keyup", handler);
+  });
+}
+
+
 
 function activityModalBody(act){
   return `
@@ -1186,7 +1441,11 @@ async function openEditActivityModal(actId){
   const act = activities.find(x => x.id === actId);
   if(!act) return;
 
-  openModal("Редактировать активность", activityModalBody(act), "Сохранить", true,
+  openModal(
+    "Редактировать активность",
+    activityModalBody(act),
+    "Сохранить",
+    true,
     async () => {
       const name = document.getElementById("aName").value.trim();
       const kph = Number(document.getElementById("aKph").value);
@@ -1202,17 +1461,21 @@ async function openEditActivityModal(actId){
 
       activities = await txGetAll("activities");
       renderActivities();
+      renderDaySummary();
       updateTopTotals();
       setStatus("Сохранено.");
     },
     async () => {
       await txDelete("activities", act.id);
-      todayActivityEntries = (todayActivityEntries || []).filter(e => e.id !== act.id);
-      await saveDraft();
       activities = await txGetAll("activities");
       renderActivities();
+      renderDaySummary();
       updateTopTotals();
       setStatus("Удалено.");
+    },
+    async () => {
+      await copyToClipboard(JSON.stringify({t:"activity", v:1, data: act}));
+      setStatus("Экспортировано в буфер.");
     }
   );
 }
@@ -1386,7 +1649,7 @@ async function saveShopping(){
 /* ---------- Backup ---------- */
 async function buildBackupObject(){
   return {
-    schema: 16,
+    schema: 17,
     exportedAt: new Date().toISOString(),
     meals: await txGetAll("meals"),
     activities: await txGetAll("activities"),
@@ -1407,13 +1670,13 @@ function downloadJson(filename, obj){
   URL.revokeObjectURL(url);
 }
 async function exportBackupNow(){
-  const date = await getAppDateISO();
+  const date = viewDateISO || await getAppDateISO();
   downloadJson(`backup-${date}.json`, await buildBackupObject());
   setStatus("Экспорт готов.");
 }
 async function importBackup(file){
   const obj = JSON.parse(await file.text());
-  if(!obj || ![1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16].includes(obj.schema)) throw new Error("Bad schema");
+  if(!obj || ![1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17].includes(obj.schema)) throw new Error("Bad schema");
   await txClear("meals");
   await txClear("activities");
   await txClear("logs");
@@ -1485,7 +1748,12 @@ async function toggleTodayCol(tabKey){
 
 /* ---------- Food actions ---------- */
 function addMealToToday(mealId){
-  todayMealEntries.push({entryId: uid("e"), mealId});
+  const m = getMealById(mealId);
+  todayMealEntries.push({
+    entryId: uid("e"),
+    mealId,
+    mealSnapshot: buildMealSnapshot(m)
+  });
 }
 function deleteMealEntry(entryId){
   todayMealEntries = (todayMealEntries || []).filter(e => e.entryId !== entryId);
@@ -1654,6 +1922,7 @@ function renderOffProduct(product, code){
       meals = await txGetAll("meals");
 
       renderFoodAll();
+      renderDaySummary();
       updateTopTotals();
       setStatus("Добавлено в меню.");
     });
@@ -1828,12 +2097,6 @@ function wireDraftInputs(){
 }
 function wireGlobalClicks(){
   document.body.addEventListener("click", async (ev) => {
-    const tgl = ev.target.closest("[data-toggle-today]");
-    if(tgl){
-      const key = tgl.getAttribute("data-toggle-today");
-      await toggleTodayCol(key);
-      return;
-    }
 
     const wAdd = ev.target.closest("[data-water-add]");
     if(wAdd){
@@ -1892,8 +2155,9 @@ function wireGlobalClicks(){
       addMealToToday(mealId);
       await saveDraft();
       renderFoodAll();
+      renderDaySummary();
       updateTopTotals();
-      setStatus("Добавлено в “Сегодня”.");
+      setStatus("Добавлено в сводку дня.");
       return;
     }
 
@@ -1903,6 +2167,7 @@ function wireGlobalClicks(){
       deleteMealEntry(entryId);
       await saveDraft();
       renderFoodAll();
+      renderDaySummary();
       updateTopTotals();
       return;
     }
@@ -1931,6 +2196,7 @@ function wireGlobalClicks(){
       if(minEl) minEl.value = "";
       await saveDraft();
       renderActivities();
+      renderDaySummary();
       updateTopTotals();
       return;
     }
@@ -1941,6 +2207,7 @@ function wireGlobalClicks(){
       todayActivityEntries.splice(idx, 1);
       await saveDraft();
       renderActivities();
+      renderDaySummary();
       updateTopTotals();
       return;
     }
@@ -1991,6 +2258,38 @@ function wireActivityInputs(){
 
 async function wireActions(){
   document.getElementById("btnSaveSettings").addEventListener("click", saveSettings);
+
+  document.getElementById("btnSingleImport").addEventListener("click", async () => {
+    const txt = String(document.getElementById("singleImportText").value || "").trim();
+    if(!txt){ setStatus("Вставь текст импорта."); return; }
+
+    let obj = null;
+    try{ obj = JSON.parse(txt); } catch(e){ setStatus("Не похоже на JSON."); return; }
+
+    const data = obj?.data ?? obj;
+    const t = obj?.t || (data?.kcalPerHour !== undefined ? "activity" : (data?.calories !== undefined ? "meal" : null));
+
+    if(t === "meal"){
+      const base = {...data}; delete base.id; const id = uid("m"); await txPut("meals", {...base, id, updatedAt: new Date().toISOString()});
+      meals = await txGetAll("meals");
+      renderFoodAll();
+      renderDaySummary();
+      updateTopTotals();
+      setStatus("Блюдо импортировано.");
+      return;
+    }
+    if(t === "activity"){
+      const baseA = {...data}; delete baseA.id; const idA = uid("a"); await txPut("activities", {...baseA, id: idA, updatedAt: new Date().toISOString()});
+      activities = await txGetAll("activities");
+      renderActivities();
+      renderDaySummary();
+      updateTopTotals();
+      setStatus("Активность импортирована.");
+      return;
+    }
+
+    setStatus("Не удалось определить тип (meal/activity).");
+  });
   document.getElementById("btnSaveShopping").addEventListener("click", saveShopping);
   document.getElementById("btnPersist").addEventListener("click", requestPersist);
 
@@ -2016,7 +2315,7 @@ async function wireActions(){
   });
 
   document.getElementById("btnSaveDay").addEventListener("click", async () => {
-    const date = await getAppDateISO();
+    const date = viewDateISO || await getAppDateISO();
 
     const eat = calcEatKcal();
     const burnExercise = calcBurnKcalExercise();
@@ -2038,8 +2337,8 @@ async function wireActions(){
       date,
       weight: document.getElementById("weight").value,
       steps: document.getElementById("steps").value,
-      mealEntries: Array.from(todayMealEntries || []),
-      activityEntries: Array.from(todayActivityEntries || []),
+      mealEntries: normalizeMealEntries(Array.from(todayMealEntries || [])),
+      activityEntries: normalizeActivityEntries(Array.from(todayActivityEntries || [])),
       eatCalories: eat,
       burnExerciseCalories: burnExercise,
       basalCalories: basal,
@@ -2065,6 +2364,7 @@ async function wireActions(){
     const dbg = await metaGet("debug.enabled");
     if(dbg){
       await advanceAppDateIfDebug();
+      viewDateISO = await getAppDateISO();
       await refreshDateUI();
 
       todayMealEntries = [];
@@ -2075,6 +2375,7 @@ async function wireActions(){
       await saveDraft();
       renderFoodAll();
       renderActivities();
+      renderDaySummary();
       updateTopTotals();
       setStatus("Сохранено. debug: дата +1.");
       return;
@@ -2134,10 +2435,12 @@ async function loadAll(){
   await loadSettings();
   await loadShopping();
   await refreshDateUI();
+  await migrateLegacyDraftOnce();
   await autoSaveDraftIfDateChanged();
   await loadDraft();
 
   renderFoodAll();
+  renderDaySummary();
   renderActivities();
   await renderLogs();
   updateTopTotals();
@@ -2154,6 +2457,30 @@ function wireTabsAndEditors(){
 
   installLongPress(document.body, "[data-meal-card]", el => el.getAttribute("data-meal-card"), openEditMealModal);
   installLongPress(document.getElementById("activities"), "[data-act-card]", el => el.getAttribute("data-act-card"), openEditActivityModal);
+
+  // Date picker: long press on date in header
+  const dp = document.getElementById("datePicker");
+  if(dp){
+    dp.addEventListener("change", async () => {
+      if(!dp.value) return;
+      await applyViewDate(dp.value);
+    });
+  }
+  const uiDate = document.getElementById("uiDate");
+  if(uiDate){
+    let t = null;
+    const start = () => {
+      if(t) clearTimeout(t);
+      t = setTimeout(() => { showDatePicker(); }, 650);
+    };
+    const cancel = () => { if(t) clearTimeout(t); t = null; };
+    uiDate.addEventListener("pointerdown", start);
+    uiDate.addEventListener("pointerup", cancel);
+    uiDate.addEventListener("pointercancel", cancel);
+    uiDate.addEventListener("pointerleave", cancel);
+    uiDate.addEventListener("contextmenu", (e) => { e.preventDefault(); showDatePicker(); });
+  }
+
 }
 
 async function main(){
