@@ -3,10 +3,11 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Food Plan MVP v17</title>
+  <title>Food Plan MVP v17.20</title>
   <style>
     body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;margin:0;padding:14px;background:#f6f7fb;color:#111}
-    .top{background:#2f6fed;color:#fff;border-radius:14px;padding:14px}
+    .top{background:var(--topToday);color:#fff;border-radius:14px;padding:14px}
+    .top.past{background:var(--topPast);}
     .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
     .pill{background:#fff;border-radius:12px;padding:10px 12px;box-shadow:0 2px 10px rgba(0,0,0,.08);flex:1 1 140px;color:#111}
     .pill.clickable{cursor:pointer;user-select:none}
@@ -34,12 +35,12 @@
     .todayBox{background:#fff;border-radius:14px;padding:12px;box-shadow:0 2px 10px rgba(0,0,0,.08)}
     .itemRow{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid #eee;align-items:center}
     .itemRow:last-child{border-bottom:0}
-    .modalBack{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;padding:14px;z-index:999}
-    .modal{background:#fff;border-radius:14px;max-width:720px;width:100%;padding:14px;box-shadow:0 20px 50px rgba(0,0,0,.35)}
+    .modalBack{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding:14px 14px calc(14px + env(safe-area-inset-bottom));z-index:999}
+    .modal{background:#fff;border-radius:14px;max-width:720px;width:100%;padding:14px;box-shadow:0 20px 50px rgba(0,0,0,.35);margin:0 auto;box-sizing:border-box}
     .modal h3{margin:0 0 10px}
     .modal .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;justify-content:flex-end}
     .modal .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-    @media (max-width:680px){.modal .row2{grid-template-columns:1fr}}
+    @media (max-width:480px){.modal .row2{grid-template-columns:1fr}}
     .hidden{display:none !important}
     .fullBar{background:rgba(255,255,255,.25);border-radius:999px;height:10px;overflow:hidden;margin-top:10px}
     .fullBar > div{height:10px;width:0;background:#fff;border-radius:999px}
@@ -50,7 +51,59 @@
     .scanVideo{width:100%;border-radius:14px;background:#000;aspect-ratio:16/9;object-fit:cover}
     .scanOverlay{position:relative}
     .scanHint{position:absolute;left:10px;right:10px;bottom:10px;background:rgba(0,0,0,.55);color:#fff;border-radius:10px;padding:8px 10px;font-size:13px}
-  </style>
+  
+
+    /* v17.10: Theme */
+    :root{ --topToday:#2f6fed; --topPast:#ec4899; }
+
+    /* Global input{width:100%} breaks checkbox/color */
+    input[type="checkbox"]{ width:auto; }
+    input[type="color"]{ width:56px; height:40px; padding:0; border-radius:10px; border:1px solid #ddd; background:transparent; }
+    input[type="color"]::-webkit-color-swatch-wrapper{ padding:0; }
+    input[type="color"]::-webkit-color-swatch{ border:none; border-radius:8px; }
+
+    label.check{ display:flex; align-items:center; gap:8px; }
+
+    body.dark{ background:#0b1220; color:#e5e7eb; }
+    body.dark .card, body.dark .todayBox, body.dark .pill{ background:#0f172a; color:#e5e7eb; border:1px solid #1f2a44; box-shadow:none; }
+    body.dark .muted{ color:#9ca3af; }
+    body.dark input, body.dark select, body.dark textarea{ background:#0b1220; color:#e5e7eb; border:1px solid #334155; }
+    body.dark input[type="color"]{ border:1px solid #334155; }
+
+    body.dark .tabbtn{ background:#0f172a; color:#e5e7eb; box-shadow:none; border:1px solid #1f2a44; }
+    body.dark .tabbtn.active{ background:#e5e7eb; color:#111; }
+
+
+    /* v17.10: Modal fits phone screen */
+    .modalBack{align-items:stretch; padding:14px 14px calc(14px + env(safe-area-inset-bottom));}
+    .modal{display:flex;flex-direction:column;max-height:calc(100dvh - 28px);max-height:calc(100svh - 28px);overflow:hidden;}
+    #modalBody{flex:1 1 auto;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;}
+    
+
+
+    /* v17.15: Modal behavior */
+    body.modalOpen{overflow:hidden;}
+    /* Overlay scroll: modal can be taller than viewport */
+    .modal{max-height:none; overflow:visible;}
+    #modalBody{overflow:visible; max-height:none;}
+
+    @media (max-width:420px){
+      .modal .actions .btn{flex:1 1 calc(50% - 8px);}
+      #modalDelete{flex:1 1 100%; margin-right:0 !important;}
+      #modalOk{flex:1 1 100%;}
+    }
+
+
+    /* v17.20: Dark modal bg */
+    body.dark .modal{background:#0f172a;color:#e5e7eb;border:1px solid #1f2a44;}
+
+
+    /* v17.20: Header pills palette (vars + contrast text) */
+    .top .pill{background:var(--pillBg, #fff); color:var(--pillText, #111); border:1px solid var(--pillBorder, transparent);}
+    .top .pill .muted{color:var(--pillMuted, #666);}
+    body.dark .top .pill{background:var(--pillBg, #0f172a); color:var(--pillText, #e5e7eb); border-color:var(--pillBorder, #1f2a44);}
+    body.dark .top .pill .muted{color:var(--pillMuted, #9ca3af);}
+</style>
 </head>
 <body>
   <div class="top">
@@ -356,6 +409,20 @@
         <input id="setAppTitle" placeholder="" maxlength="50"/>
       </div>
 
+      <div class="grid2" style="margin-top:10px">
+        <div>
+          <div class="muted">Цвет шапки (сегодня)</div>
+          <input id="topColorToday" type="color" value="#2f6fed"/>
+        </div>
+        <div>
+          <div class="muted">Цвет шапки (прошлые дни)</div>
+          <input id="topColorPast" type="color" value="#ec4899"/>
+        </div>
+      </div>
+
+      <label class="check" style="margin-top:10px"><input id="darkTheme" type="checkbox"> <span>Тёмная тема</span></label>
+
+
       <div class="muted" style="margin-top:10px">BMR считается по Mifflin-St Jeor: 10W + 6.25H − 5A + S.</div>
 
       <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px">
@@ -438,6 +505,7 @@
 
   <div class="modalBack" id="modalBack">
     <div class="modal">
+	  <div style="margin-bottom:5%">
       <h3 id="modalTitle"></h3>
       <div id="modalBody"></div>
       <div class="actions">
@@ -558,7 +626,100 @@ let todayWaterMl = 0;
 
 // View date (editable): all actions apply to the selected date
 let viewDateISO = null;
+let themeTopToday = null;
+let themeTopPast = null;
+let themeDark = false;
+
+function applyTheme(){
+  document.body.classList.toggle("dark", !!themeDark);
+
+  const baseToday = themeTopToday || "#2f6fed";
+  const basePast  = themeTopPast  || "#ec4899";
+
+  // Dark theme: header is a darker mixed version; pills keep the base color.
+  if(themeDark){
+    document.documentElement.style.setProperty("--topToday", mixHex(baseToday, "#0b1220", 0.38));
+    document.documentElement.style.setProperty("--topPast",  mixHex(basePast,  "#0b1220", 0.38));
+  } else {
+    document.documentElement.style.setProperty("--topToday", baseToday);
+    document.documentElement.style.setProperty("--topPast",  basePast);
+  }
+
+  applyHeaderPalette();
+}
+
+function clamp01(x){ return Math.max(0, Math.min(1, x)); }
+function hexToRgb(hex){
+  const h = String(hex || "").trim().replace(/^#/, "");
+  if(h.length === 3){
+    return {r: parseInt(h[0]+h[0],16), g: parseInt(h[1]+h[1],16), b: parseInt(h[2]+h[2],16)};
+  }
+  if(h.length !== 6) return null;
+  const r = parseInt(h.slice(0,2), 16);
+  const g = parseInt(h.slice(2,4), 16);
+  const b = parseInt(h.slice(4,6), 16);
+  if(!Number.isFinite(r)||!Number.isFinite(g)||!Number.isFinite(b)) return null;
+  return {r,g,b};
+}
+function rgbToHex(rgb){
+  const to = (v) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, "0");
+  return "#" + to(rgb.r) + to(rgb.g) + to(rgb.b);
+}
+function mixHex(a, b, t){
+  t = clamp01(t);
+  const A = hexToRgb(a);
+  const B = hexToRgb(b);
+  if(!A || !B) return a || b || "#ffffff";
+  return rgbToHex({
+    r: A.r*(1-t) + B.r*t,
+    g: A.g*(1-t) + B.g*t,
+    b: A.b*(1-t) + B.b*t
+  });
+}
+function yiqLuma(hex){
+  const c = hexToRgb(hex);
+  if(!c) return 0;
+  return (c.r*299 + c.g*587 + c.b*114) / 1000;
+}
+
+function applyHeaderPalette(forceIsPast){
+  const top = document.querySelector(".top");
+  const isPast = (typeof forceIsPast === "boolean") ? forceIsPast : (top?.classList?.contains("past") || false);
+  const base = isPast ? (themeTopPast || "#ec4899") : (themeTopToday || "#2f6fed");
+
+  // Light theme: pale tint. Dark theme: pills keep base color, but text becomes black/white by brightness.
+  const pillBg = themeDark ? base : mixHex(base, "#ffffff", 0.86);
+
+  let pillText;
+  let pillMuted;
+  if(themeDark){
+    const l = yiqLuma(pillBg);
+    pillText = (l >= 160) ? "#111111" : "#e5e7eb";
+    pillMuted = mixHex(pillText, pillBg, 0.55);
+  } else {
+    pillText = "#111111";
+    pillMuted = mixHex(base, "#111111", 0.70);
+  }
+
+  const pillBorder = themeDark ? mixHex(base, "#ffffff", 0.22) : mixHex(base, "#111111", 0.90);
+
+  document.documentElement.style.setProperty("--pillBg", pillBg);
+  document.documentElement.style.setProperty("--pillText", pillText);
+  document.documentElement.style.setProperty("--pillBorder", pillBorder);
+  document.documentElement.style.setProperty("--pillMuted", pillMuted);
+}
+
+
 function draftKey(iso){ return `draft:${iso}`; }
+
+function fmtTimeHM(iso){
+  if(!iso) return "";
+  const d = new Date(iso);
+  if(!Number.isFinite(d.getTime())) return "";
+  const hh = String(d.getHours()).padStart(2,'0');
+  const mm = String(d.getMinutes()).padStart(2,'0');
+  return `${hh}:${mm}`;
+}
 
 function safeNum(x){
   const n = Number(x);
@@ -673,7 +834,13 @@ async function refreshDateUI(){
   document.getElementById("uiDebugTag").textContent = tags.length ? ("(" + tags.join(", ") + ")") : "";
 
   const top = document.querySelector(".top");
-  if(top) top.classList.toggle("past", viewDateISO !== todayISO);
+  if(top){
+    const isPast = (viewDateISO !== todayISO);
+    top.classList.toggle("past", isPast);
+    applyHeaderPalette(isPast);
+  } else {
+    applyHeaderPalette(viewDateISO !== todayISO);
+  }
 
   const dp = document.getElementById("datePicker");
   if(dp) dp.value = viewDateISO;
@@ -855,7 +1022,7 @@ function normalizeMealEntries(entries){
     const entryId = e.entryId || uid("e");
     const mealId = e.mealId || e.id || null;
     const snap = e.mealSnapshot || e.snapshot || (mealId ? buildMealSnapshot(getMealById(mealId)) : null);
-    return { ...e, entryId, mealId, mealSnapshot: snap };
+    return { ...e, entryId, mealId, mealSnapshot: snap, createdAt: e.createdAt || e.addedAt || null };
   }).filter(Boolean);
 }
 
@@ -866,7 +1033,7 @@ function normalizeActivityEntries(entries){
     const id = e.id || e.actId || e.activityId || null;
     const minutes = Math.round(safeNum(e.minutes));
     const snap = e.activitySnapshot || e.snapshot || (id ? buildActivitySnapshot(activities.find(x=>x.id===id)) : null);
-    return { ...e, id, minutes, activitySnapshot: snap };
+    return { ...e, id, minutes, activitySnapshot: snap, createdAt: e.createdAt || e.addedAt || null };
   }).filter(Boolean);
 }
 
@@ -984,7 +1151,7 @@ function renderTodayByCategory(cat, todayListId){
       <div class="itemRow">
         <div>
           <div style="font-weight:900">${escapeHtml(m?.name ?? "??")}</div>
-          <div class="muted">${escapeHtml(m?.calories ?? 0)} ккал • Б ${escapeHtml(m?.proteinG ?? 0)} г • Ж ${escapeHtml(m?.fluidMl ?? 0)} мл</div>
+          <div class="muted">${fmtTimeHM(e.createdAt) ? (fmtTimeHM(e.createdAt) + " • ") : ""}${escapeHtml(m?.calories ?? 0)} ккал • Б ${escapeHtml(m?.proteinG ?? 0)} г • Ж ${escapeHtml(m?.fluidMl ?? 0)} мл</div>
         </div>
         <div>
           <button class="btn danger tiny" data-del-meal-entry="${escapeHtml(e.entryId)}">Удалить</button>
@@ -1017,7 +1184,7 @@ function renderDayActivities(){
       <div class="itemRow">
         <div>
           <div style="font-weight:900">${escapeHtml(a?.name ?? "??")}</div>
-          <div class="muted">${escapeHtml(e.minutes)} мин • ${burn} ккал</div>
+          <div class="muted">${fmtTimeHM(e.createdAt) ? (fmtTimeHM(e.createdAt) + " • ") : ""}${escapeHtml(e.minutes)} мин • ${burn} ккал</div>
         </div>
         <div>
           <button class="btn danger tiny" data-del-act-idx="${idx}">Удалить</button>
@@ -1082,7 +1249,7 @@ function renderActivities(){
           <div class="itemRow">
             <div>
               <div style="font-weight:900">${escapeHtml(a?.name ?? "??")}</div>
-              <div class="muted">${escapeHtml(e.minutes)} мин • ${burn} ккал</div>
+              <div class="muted">${fmtTimeHM(e.createdAt) ? (fmtTimeHM(e.createdAt) + " • ") : ""}${escapeHtml(e.minutes)} мин • ${burn} ккал</div>
             </div>
             <div>
               <button class="btn danger tiny" data-del-act-idx="${idx}">Удалить</button>
@@ -1113,10 +1280,12 @@ function openModal(title, bodyHtml, okText="OK", showDelete=false, onOk=null, on
   expBtn.style.display = onExport ? "inline-block" : "none";
   modalOnExport = onExport;
 
-  document.getElementById("modalBack").style.display = "flex";
+  document.body.classList.add("modalOpen");
+  document.getElementById("modalBack").style.display = "block";
 }
 function closeModal(){
   document.getElementById("modalBack").style.display = "none";
+  document.body.classList.remove("modalOpen");
   document.getElementById("modalBody").innerHTML = "";
   modalOnOk = null;
   modalOnDelete = null;
@@ -1587,6 +1756,21 @@ async function loadSettings(){
 
   const todayColsHidden = await metaGet("ui.todayHidden") || {};
   applyTodayHiddenState(todayColsHidden);
+
+  // Theme
+  themeTopToday = await metaGet("theme.topToday");
+  themeTopPast = await metaGet("theme.topPast");
+  themeDark = !!(await metaGet("theme.dark"));
+
+  const elToday = document.getElementById("topColorToday");
+  const elPast = document.getElementById("topColorPast");
+  const elDark = document.getElementById("darkTheme");
+  if(elToday) elToday.value = String(themeTopToday || "#2f6fed");
+  if(elPast) elPast.value = String(themeTopPast || "#ec4899");
+  if(elDark) elDark.checked = !!themeDark;
+
+  applyTheme();
+
 }
 async function saveSettings(){
   const h = Number(document.getElementById("setHeight").value || 0);
@@ -1600,6 +1784,10 @@ async function saveSettings(){
   const autoSave = document.getElementById("autoSaveOnNewDay").checked;
   const favEnabled = document.getElementById("favoritesEnabled").checked;
   const appTitle = document.getElementById("setAppTitle").value.trim();
+
+  const topToday = String(document.getElementById("topColorToday")?.value || "#2f6fed");
+  const topPast = String(document.getElementById("topColorPast")?.value || "#ec4899");
+  const dark = !!document.getElementById("darkTheme")?.checked;
 
   if(!h || !a){ setStatus("Рост и возраст обязательны."); return; }
   if(!Number.isFinite(bmrMult) || bmrMult < 1 || bmrMult > 2){ setStatus("BMR множитель: 1.00–2.00"); return; }
@@ -1620,6 +1808,14 @@ async function saveSettings(){
   await metaSet("settings.autoSaveOnNewDay", autoSave);
   await metaSet("settings.favoritesEnabled", favEnabled);
   await metaSet("settings.appTitle", appTitle);
+  await metaSet("theme.topToday", topToday);
+  await metaSet("theme.topPast", topPast);
+  await metaSet("theme.dark", !!dark);
+
+  themeTopToday = topToday;
+  themeTopPast = topPast;
+  themeDark = !!dark;
+  applyTheme();
 
   document.getElementById("appTitle").textContent = appTitle || "Food Plan";
 
@@ -1752,7 +1948,8 @@ function addMealToToday(mealId){
   todayMealEntries.push({
     entryId: uid("e"),
     mealId,
-    mealSnapshot: buildMealSnapshot(m)
+    mealSnapshot: buildMealSnapshot(m),
+    createdAt: new Date().toISOString()
   });
 }
 function deleteMealEntry(entryId){
@@ -2191,7 +2388,7 @@ function wireGlobalClicks(){
         return;
       }
 
-      todayActivityEntries.push({id, minutes});
+      todayActivityEntries.push({id, minutes, activitySnapshot: buildActivitySnapshot(activities.find(x => x.id === id)), createdAt: new Date().toISOString()});
       if(kcalEl) kcalEl.value = "";
       if(minEl) minEl.value = "";
       await saveDraft();
