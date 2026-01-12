@@ -4,170 +4,92 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>Food Plan MVP v17.20</title>
-  <style>
-    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;margin:0;padding:14px;background:#f6f7fb;color:#111}
-    .top{background:var(--topToday);color:#fff;border-radius:14px;padding:14px}
-    .top.past{background:var(--topPast);}
-    .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
-    .pill{background:#fff;border-radius:12px;padding:10px 12px;box-shadow:0 2px 10px rgba(0,0,0,.08);flex:1 1 140px;color:#111}
-    .pill.clickable{cursor:pointer;user-select:none}
-    .muted{color:#666;font-size:13px}
-    .mutedOnBlue{color:#dbe7ff;font-size:13px}
-    .big{font-size:22px;font-weight:900}
-    .tabs{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
-    .tabbtn{border:0;background:#fff;padding:10px 12px;border-radius:999px;box-shadow:0 2px 10px rgba(0,0,0,.08);cursor:pointer}
-    .tabbtn.active{background:#111;color:#fff}
-    .tab{display:none}
-    .tab.active{display:block}
-    .tabHeader{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin:6px 0 10px}
-    .tabTitle{font-weight:900}
-    .btn{border:0;background:#19a34a;color:#fff;padding:10px 12px;border-radius:12px;cursor:pointer}
-    .btn.secondary{background:#6b7280}
-    .btn.danger{background:#dc2626}
-    .btn.tiny{padding:6px 10px;border-radius:10px;font-size:14px}
-    .card{background:#fff;border-radius:14px;padding:12px;margin:10px 0;box-shadow:0 2px 10px rgba(0,0,0,.08);border:2px solid transparent}
-    .kcal{font-weight:900;color:#19a34a;white-space:nowrap}
-    input,textarea,select{width:100%;box-sizing:border-box;padding:10px;border-radius:10px;border:1px solid #ddd;font-size:16px}
-    textarea{min-height:90px}
-    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-    @media (max-width:680px){.grid2{grid-template-columns:1fr}}
-    .status{margin-top:10px;font-size:13px;opacity:.95;min-height:18px}
-    .todayBox{background:#fff;border-radius:14px;padding:12px;box-shadow:0 2px 10px rgba(0,0,0,.08)}
-    .itemRow{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid #eee;align-items:center}
-    .itemRow:last-child{border-bottom:0}
-    .modalBack{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding:14px 14px calc(14px + env(safe-area-inset-bottom));z-index:999}
-    .modal{background:#fff;border-radius:14px;max-width:720px;width:100%;padding:14px;box-shadow:0 20px 50px rgba(0,0,0,.35);margin:0 auto;box-sizing:border-box}
-    .modal h3{margin:0 0 10px}
-    .modal .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;justify-content:flex-end}
-    .modal .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-    @media (max-width:480px){.modal .row2{grid-template-columns:1fr}}
-    .hidden{display:none !important}
-    .fullBar{background:rgba(255,255,255,.25);border-radius:999px;height:10px;overflow:hidden;margin-top:10px}
-    .fullBar > div{height:10px;width:0;background:#fff;border-radius:999px}
-    .mealCardHead{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
-    .mealCardActions{display:flex;gap:8px;align-items:center;justify-content:flex-end;flex-wrap:wrap;margin-top:8px}
-    .mealMeta{margin-top:6px}
-    .todayToggleRow{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-    .scanVideo{width:100%;border-radius:14px;background:#000;aspect-ratio:16/9;object-fit:cover}
-    .scanOverlay{position:relative}
-    .scanHint{position:absolute;left:10px;right:10px;bottom:10px;background:rgba(0,0,0,.55);color:#fff;border-radius:10px;padding:8px 10px;font-size:13px}
-  
-
-    /* v17.10: Theme */
-    :root{ --topToday:#2f6fed; --topPast:#ec4899; }
-
-    /* Global input{width:100%} breaks checkbox/color */
-    input[type="checkbox"]{ width:auto; }
-    input[type="color"]{ width:56px; height:40px; padding:0; border-radius:10px; border:1px solid #ddd; background:transparent; }
-    input[type="color"]::-webkit-color-swatch-wrapper{ padding:0; }
-    input[type="color"]::-webkit-color-swatch{ border:none; border-radius:8px; }
-
-    label.check{ display:flex; align-items:center; gap:8px; }
-
-    body.dark{ background:#0b1220; color:#e5e7eb; }
-    body.dark .card, body.dark .todayBox, body.dark .pill{ background:#0f172a; color:#e5e7eb; border:1px solid #1f2a44; box-shadow:none; }
-    body.dark .muted{ color:#9ca3af; }
-    body.dark input, body.dark select, body.dark textarea{ background:#0b1220; color:#e5e7eb; border:1px solid #334155; }
-    body.dark input[type="color"]{ border:1px solid #334155; }
-
-    body.dark .tabbtn{ background:#0f172a; color:#e5e7eb; box-shadow:none; border:1px solid #1f2a44; }
-    body.dark .tabbtn.active{ background:#e5e7eb; color:#111; }
-
-
-    /* v17.10: Modal fits phone screen */
-    .modalBack{align-items:stretch; padding:14px 14px calc(14px + env(safe-area-inset-bottom));}
-    .modal{display:flex;flex-direction:column;max-height:calc(100dvh - 28px);max-height:calc(100svh - 28px);overflow:hidden;}
-    #modalBody{flex:1 1 auto;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;}
-    
-
-
-    /* v17.15: Modal behavior */
-    body.modalOpen{overflow:hidden;}
-    /* Overlay scroll: modal can be taller than viewport */
-    .modal{max-height:none; overflow:visible;}
-    #modalBody{overflow:visible; max-height:none;}
-
-    @media (max-width:420px){
-      .modal .actions .btn{flex:1 1 calc(50% - 8px);}
-      #modalDelete{flex:1 1 100%; margin-right:0 !important;}
-      #modalOk{flex:1 1 100%;}
-    }
-
-
-    /* v17.20: Dark modal bg */
-    body.dark .modal{background:#0f172a;color:#e5e7eb;border:1px solid #1f2a44;}
-
-
-    /* v17.20: Header pills palette (vars + contrast text) */
-    .top .pill{background:var(--pillBg, #fff); color:var(--pillText, #111); border:1px solid var(--pillBorder, transparent);}
-    .top .pill .muted{color:var(--pillMuted, #666);}
-    body.dark .top .pill{background:var(--pillBg, #0f172a); color:var(--pillText, #e5e7eb); border-color:var(--pillBorder, #1f2a44);}
-    body.dark .top .pill .muted{color:var(--pillMuted, #9ca3af);}
-</style>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="top">
-    <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap">
-      <div>
-        <div style="font-size:18px;font-weight:900" id="appTitle">Food Plan</div>
-        <div class="mutedOnBlue" style="margin-top:4px">
-          <span id="uiDate"></span> <span id="uiDebugTag"></span>
-          <input id="datePicker" type="date" class="hidden">
+  <div class="master-header" id="masterHeader">
+    <div class="top" id="mainDashboard">
+      <!-- Top Section: Persistent Title & Progress -->
+      <div class="dash-top">
+        <div class="header-main-row">
+          <div id="appTitle" style="font-size:18px;font-weight:900">Food Plan</div>
+          <div class="mutedOnBlue clickable" id="headerDateContainer">
+            <span id="uiDate"></span> <span id="uiDebugTag"></span>
+            <input id="datePicker" type="date" class="hidden">
+          </div>
+        </div>
+        <div class="fullBar"><div id="limitBar"></div></div>
+      </div>
+
+      <!-- Middle Section: Collapsible Metrics -->
+      <div class="dash-middle" id="dashMiddle">
+        <div class="row" id="mainPillsRow" style="margin-top:12px">
+          <div class="pill">
+            <div class="muted">Съедено</div>
+            <div class="big" id="todayEat">0</div>
+            <div class="muted">ккал</div>
+          </div>
+          <div class="pill">
+            <div class="muted">Сожжено (упр.)</div>
+            <div class="big" id="todayBurn">0</div>
+            <div class="muted">ккал</div>
+            <div class="muted" id="bmrInfo" style="margin-top:6px"></div>
+          </div>
+          <div class="pill clickable" id="netTile" title="Нажми для смены режима">
+            <div class="muted" id="nettoTitle">Нетто</div>
+            <div class="big" id="todayNet">0</div>
+            <div class="muted" id="nettoLabel"></div>
+          </div>
+          <div class="pill" id="trackerTile" style="min-width:200px">
+            <div class="muted">Белок</div>
+            <div class="big" id="uiProtein">0/0 г</div>
+            <div class="muted" style="margin-top:6px">Вода</div>
+            <div class="big" id="uiWater">0/2000 мл</div>
+          </div>
+        </div>
+
+      <div class="pill" id="dashFieldsRow" style="margin-top:12px; display:flex; padding: 10px;">
+        <div style="display:flex; gap:10px; justify-content: space-around; align-items: center; width: 100%;">
+          <div class="dash-field-input-wrapper">
+            <span class="dash-field-icon">👣</span>
+            <input id="dashSteps" class="dash-field-input" type="number" placeholder="Шаги" title="Шаги за день"/>
+          </div>
+          <div class="dash-field-input-wrapper">
+            <span class="dash-field-icon">⚖️</span>
+            <input id="dashWeight" class="dash-field-input" type="number" step="0.1" placeholder="Вес" title="Ваш вес"/>
+          </div>
         </div>
       </div>
-    </div>
+      </div>
 
-    <div class="fullBar"><div id="limitBar"></div></div>
-
-    <div class="row" style="margin-top:12px">
-      <div class="pill">
-        <div class="muted">Съедено</div>
-        <div class="big" id="todayEat">0</div>
-        <div class="muted">ккал</div>
-      </div>
-      <div class="pill">
-        <div class="muted">Сожжено (упр.)</div>
-        <div class="big" id="todayBurn">0</div>
-        <div class="muted">ккал</div>
-        <div class="muted" id="bmrInfo" style="margin-top:6px"></div>
-      </div>
-      <div class="pill clickable" id="netTile" title="Нажми для смены режима">
-        <div class="muted" id="nettoTitle">Нетто</div>
-        <div class="big" id="todayNet">0</div>
-        <div class="muted" id="nettoLabel"></div>
-      </div>
-      <div class="pill" id="trackerTile" style="min-width:200px">
-      <div class="muted">Белок</div>
-      <div class="big" id="uiProtein">0/0 г</div>
-      <div class="muted" style="margin-top:6px">Вода</div>
-      <div class="big" id="uiWater">0/2000 мл</div>
-      <!--<div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:8px">
-        <button class="btn secondary tiny" data-water-add="250">+250</button>
-        <button class="btn secondary tiny" data-water-add="500">+500</button>
-        <button class="btn secondary tiny" data-water-reset="1">Сброс</button>
-      </div>-->
-    </div>
-      <div class="pill">
-        <div class="muted">Шаги</div>
-        <input id="steps" type="number" placeholder="6000"/>
+      <!-- Bottom Section: Persistent Status -->
+      <div class="dash-bottom">
+        <div class="status" id="status"></div>
       </div>
     </div>
 
-    <div class="status" id="status"></div>
-  </div>
-
-  <div class="tabs">
-    <button class="tabbtn active" data-tab="day">Сводка дня</button>
-    <button class="tabbtn" data-tab="breakfast">Завтрак</button>
-    <button class="tabbtn" data-tab="lunch">Обед</button>
-    <button class="tabbtn" data-tab="dinner">Ужин</button>
-    <button class="tabbtn" data-tab="treat">Вкусняшки</button>
-    <button class="tabbtn" data-tab="snacks">Перекусы</button>
-    <button class="tabbtn" data-tab="activities">Занятия</button>
-    <button class="tabbtn" data-tab="barcode">Штрихкод</button>
-    <button class="tabbtn" data-tab="log">Лог</button>
-    <button class="tabbtn" data-tab="settings">Настройки</button>
-    <button class="tabbtn" data-tab="data">Данные</button>
+    <div class="tabs">
+      <button class="tabbtn active" data-tab="day">Главная</button>
+      <button class="tabbtn" data-tab="activities">Активность</button>
+      <button class="tabbtn" data-tab="food">Еда</button>
+      <button class="tabbtn" data-tab="barcode">Скан</button>
+      <button class="tabbtn" data-tab="log">Лог</button>
+      <button class="tabbtn" data-tab="data">Данные</button>
+      <button class="tabbtn" data-tab="settings">Настройки</button>
+    </div>
+    
+    <div id="foodStickyControls" class="sticky-tab-controls" style="display:none">
+      <div class="sub-tabs">
+        <button class="tabbtn active food-sub-tab" data-food-type="recipe">Блюда</button>
+        <button class="tabbtn food-sub-tab" data-food-type="snack">Перекусы</button>
+        <button class="tabbtn food-sub-tab" data-food-type="liquid">Напитки</button>
+        <button class="tabbtn food-sub-tab" data-food-type="ingredient">Ингредиенты</button>
+      </div>
+      <div id="foodSearchContainer"></div>
+    </div>
+    <div id="activitiesStickyControls" class="sticky-tab-controls" style="display:none">
+      <div id="activitiesSearchContainer"></div>
+    </div>
   </div>
 
 
@@ -208,81 +130,15 @@
     </div>
   </div>
 
-  <!-- Food tabs -->
-  <div id="breakfast" class="tab">
-    <div class="tabHeader">
-      <div class="tabTitle">Завтрак</div>
-      <div class="todayToggleRow">
-        <button class="btn secondary" data-add-meal="breakfast">Добавить</button>
-      </div>
-    </div>
-    <div class="grid2 one" id="breakfastGrid">
-      <div><div id="breakfastList"></div></div>
-    </div>
-  </div>
-
-  <div id="lunch" class="tab">
-    <div class="tabHeader">
-      <div class="tabTitle">Обед</div>
-      <div class="todayToggleRow">
-        <button class="btn secondary" data-add-meal="lunch">Добавить</button>
-      </div>
-    </div>
-    <div class="grid2 one" id="lunchGrid">
-      <div><div id="lunchList"></div></div>
-    </div>
-  </div>
-
-  <div id="dinner" class="tab">
-    <div class="tabHeader">
-      <div class="tabTitle">Ужин</div>
-      <div class="todayToggleRow">
-        <button class="btn secondary" data-add-meal="dinner">Добавить</button>
-      </div>
-    </div>
-    <div class="grid2 one" id="dinnerGrid">
-      <div><div id="dinnerList"></div></div>
-    </div>
-  </div>
-
-  <div id="treat" class="tab">
-    <div class="tabHeader">
-      <div class="tabTitle">Вкусняшки</div>
-      <div class="todayToggleRow">
-        <button class="btn secondary" data-add-meal="treat">Добавить</button>
-      </div>
-    </div>
-    <div class="grid2 one" id="treatGrid">
-      <div><div id="treatList"></div></div>
-    </div>
-  </div>
-
-  <div id="snacks" class="tab">
-    <div class="tabHeader">
-      <div class="tabTitle">Перекусы</div>
-      <div class="todayToggleRow">
-        <button class="btn secondary" data-add-meal="snack">Добавить</button>
-      </div>
-    </div>
-    <div class="grid2 one" id="snacksGrid">
-      <div>
-        <div class="muted">Нажми “Съесть”, чтобы добавить в “Сегодня”.</div>
-        <div id="snackList"></div>
-      </div>
+  <div id="food" class="tab">
+    <div class="grid2 one" id="foodGrid">
+      <div><div id="foodList"></div></div>
     </div>
   </div>
 
   <div id="activities" class="tab">
-    <div class="tabHeader">
-      <div class="tabTitle">Занятия</div>
-      <div class="todayToggleRow">
-        <button class="btn secondary" id="btnAddActivity">Добавить</button>
-      </div>
-    </div>
-
     <div class="grid2 one" id="activitiesGrid">
       <div>
-        <div class="muted" style="margin:6px 0">Введи ккал за сессию (или минуты) и нажми Enter / Добавить.</div>
         <div id="activityList"></div>
       </div>
     </div>
@@ -464,17 +320,14 @@
       <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px">
         <button class="btn danger" id="btnResetJournal" style="padding:12px 20px; font-weight:900">Сбросить журнал</button>
       </div>
+      <div class="muted" style="margin-top:12px">Полный сброс — удалит ВСЁ (блюда, активности, настройки, логи).</div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px">
+        <button class="btn danger" id="btnFactoryReset" style="padding:8px 16px; font-size:12px">Factory Reset (Full Data Wipe)</button>
+      </div>
     </div>
   </div>
 
-  <div id="data" class="tab"><div class="card" style="margin-top:10px">
-      <div style="font-weight:900">Импорт одной карточки</div>
-      <div class="muted" style="margin-top:6px">Вставь текст из “Экспорт” (одна строка JSON).</div>
-      <textarea id="singleImportText" placeholder='{"t":"meal","v":1,"data":{...}}' style="margin-top:10px"></textarea>
-      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px">
-        <button class="btn secondary" id="btnSingleImport">Импорт</button>
-      </div>
-    </div>
+  <div id="data" class="tab">
     <div class="grid2">
       <div class="card">
         <div style="font-weight:900">Импорт backup.json</div>
@@ -482,6 +335,14 @@
         <div class="muted" style="margin-top:8px">meals/activities/logs/shopping/meta.</div>
         <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px">
           <button class="btn secondary" id="btnImport">Импорт</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div style="font-weight:900">Импорт рецепта/бандла</div>
+        <div class="muted">Импорт через текст или QR-код.</div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px">
+          <button class="btn secondary" id="btnImportBundle">Импорт бандла</button>
         </div>
       </div>
 
@@ -503,6 +364,43 @@
     </div>
   </div>
 
+  <div class="modalBack" id="portionModalBack">
+    <div class="modal" id="portionModal">
+      <h3 id="portionModalTitle">Подтвердите порцию</h3>
+      <div id="portionModalBody">
+        <div class="card">
+          <div style="font-weight:900" id="portionItemName"></div>
+          <div style="display:flex; align-items:center; gap:10px; margin-top:10px">
+            <div style="flex:1">
+              <div class="muted">Кол-во порций</div>
+              <input id="portionMultiplier" type="number" step="0.1" value="1" inputmode="decimal" />
+            </div>
+            <div style="flex:1">
+              <div class="muted">Вес (<span id="portionUnit">г</span>)</div>
+              <input id="portionAmount" type="number" step="1" inputmode="numeric" />
+            </div>
+          </div>
+          <div class="muted" style="margin-top:10px">
+            Итого: <span id="portionKcal" class="kcal">0</span> ккал
+          </div>
+          <div class="muted" style="margin-top:4px">
+            Белки: <span id="portionProtein">0</span> г, 
+            Жидкость: <span id="portionFluid">0</span> мл
+          </div>
+          
+          <div id="portionIngredientsToggleWrapper" style="margin-top:10px; display:none">
+            <button class="btn secondary tiny" style="width:100%" id="btnTogglePortionIngredients">Показать ингредиенты</button>
+          </div>
+          <div id="portionIngredientsList" style="margin-top:10px; display:none"></div>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn secondary" id="cancelPortionBtn">Отмена</button>
+        <button class="btn" id="confirmPortionBtn">Добавить</button>
+      </div>
+    </div>
+  </div>
+
   <div class="modalBack" id="modalBack">
     <div class="modal">
 	  <div style="margin-bottom:5%">
@@ -516,2177 +414,179 @@
         <button class="btn" id="modalOk">OK</button>
       </div>
     </div>
+    </div>
   </div>
 
-<script type="module">
-import * as ZXingBrowser from 'https://unpkg.com/@zxing/browser@0.1.5?module';
-
-/* ---------- IndexedDB ---------- */
-const DBNAME = "food-plan-db";
-const DBVER = 6;
-
-let statusTimer = null;
-
-window.favoritesEnabled = false;
-window.bmrMultiplier = 1.2;
-window.goalKcal = -400;
-window.proteinPerKg = 0.83;
-window.waterGoalMl = 2000;
-window.nettoMode = "nettonobmr";
-
-function openDb(){
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.open(DBNAME, DBVER);
-    req.onupgradeneeded = () => {
-      const db = req.result;
-      if(!db.objectStoreNames.contains("meals")) db.createObjectStore("meals", {keyPath:"id"});
-      if(!db.objectStoreNames.contains("activities")) db.createObjectStore("activities", {keyPath:"id"});
-      if(!db.objectStoreNames.contains("logs")) db.createObjectStore("logs", {keyPath:"date"});
-      if(!db.objectStoreNames.contains("shopping")) db.createObjectStore("shopping", {keyPath:"id"});
-      if(!db.objectStoreNames.contains("meta")) db.createObjectStore("meta", {keyPath:"key"});
-    };
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
-}
-async function txGet(store, key){
-  const db = await openDb();
-  return new Promise((resolve) => {
-    const tx = db.transaction(store, "readonly");
-    const req = tx.objectStore(store).get(key);
-    req.onsuccess = () => resolve(req.result ?? null);
-    req.onerror = () => resolve(null);
-  });
-}
-
-async function txGetAll(store){
-  const db = await openDb();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(store, "readonly");
-    const req = tx.objectStore(store).getAll();
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
-}
-async function txPut(store, value){
-  const db = await openDb();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(store, "readwrite");
-    tx.objectStore(store).put(value);
-    tx.oncomplete = () => resolve(true);
-    tx.onerror = () => reject(tx.error);
-  });
-}
-async function txDelete(store, key){
-  const db = await openDb();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(store, "readwrite");
-    tx.objectStore(store).delete(key);
-    tx.oncomplete = () => resolve(true);
-    tx.onerror = () => reject(tx.error);
-  });
-}
-async function txClear(store){
-  const db = await openDb();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(store, "readwrite");
-    const req = tx.objectStore(store).clear();
-    req.onsuccess = () => resolve(true);
-    req.onerror = () => reject(req.error);
-  });
-}
-async function txBulkPut(store, arr){
-  const db = await openDb();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(store, "readwrite");
-    const os = tx.objectStore(store);
-    for(const item of arr) os.put(item);
-    tx.oncomplete = () => resolve(true);
-    tx.onerror = () => reject(tx.error);
-  });
-}
-async function metaGet(key){
-  const db = await openDb();
-  return new Promise((resolve) => {
-    const tx = db.transaction("meta", "readonly");
-    const req = tx.objectStore("meta").get(key);
-    req.onsuccess = () => resolve(req.result?.value ?? null);
-    req.onerror = () => resolve(null);
-  });
-}
-async function metaSet(key, value){
-  await txPut("meta", {key, value});
-}
-
-/* ---------- State ---------- */
-let meals;
-let activities;
-let todayMealEntries = [];
-let todayWaterMl = 0;
-
-// View date (editable): all actions apply to the selected date
-let viewDateISO = null;
-let themeTopToday = null;
-let themeTopPast = null;
-let themeDark = false;
-
-function applyTheme(){
-  document.body.classList.toggle("dark", !!themeDark);
-
-  const baseToday = themeTopToday || "#2f6fed";
-  const basePast  = themeTopPast  || "#ec4899";
-
-  // Dark theme: header is a darker mixed version; pills keep the base color.
-  if(themeDark){
-    document.documentElement.style.setProperty("--topToday", mixHex(baseToday, "#0b1220", 0.38));
-    document.documentElement.style.setProperty("--topPast",  mixHex(basePast,  "#0b1220", 0.38));
-  } else {
-    document.documentElement.style.setProperty("--topToday", baseToday);
-    document.documentElement.style.setProperty("--topPast",  basePast);
-  }
-
-  applyHeaderPalette();
-}
-
-function clamp01(x){ return Math.max(0, Math.min(1, x)); }
-function hexToRgb(hex){
-  const h = String(hex || "").trim().replace(/^#/, "");
-  if(h.length === 3){
-    return {r: parseInt(h[0]+h[0],16), g: parseInt(h[1]+h[1],16), b: parseInt(h[2]+h[2],16)};
-  }
-  if(h.length !== 6) return null;
-  const r = parseInt(h.slice(0,2), 16);
-  const g = parseInt(h.slice(2,4), 16);
-  const b = parseInt(h.slice(4,6), 16);
-  if(!Number.isFinite(r)||!Number.isFinite(g)||!Number.isFinite(b)) return null;
-  return {r,g,b};
-}
-function rgbToHex(rgb){
-  const to = (v) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, "0");
-  return "#" + to(rgb.r) + to(rgb.g) + to(rgb.b);
-}
-function mixHex(a, b, t){
-  t = clamp01(t);
-  const A = hexToRgb(a);
-  const B = hexToRgb(b);
-  if(!A || !B) return a || b || "#ffffff";
-  return rgbToHex({
-    r: A.r*(1-t) + B.r*t,
-    g: A.g*(1-t) + B.g*t,
-    b: A.b*(1-t) + B.b*t
-  });
-}
-function yiqLuma(hex){
-  const c = hexToRgb(hex);
-  if(!c) return 0;
-  return (c.r*299 + c.g*587 + c.b*114) / 1000;
-}
-
-function applyHeaderPalette(forceIsPast){
-  const top = document.querySelector(".top");
-  const isPast = (typeof forceIsPast === "boolean") ? forceIsPast : (top?.classList?.contains("past") || false);
-  const base = isPast ? (themeTopPast || "#ec4899") : (themeTopToday || "#2f6fed");
-
-  // Light theme: pale tint. Dark theme: pills keep base color, but text becomes black/white by brightness.
-  const pillBg = themeDark ? base : mixHex(base, "#ffffff", 0.86);
-
-  let pillText;
-  let pillMuted;
-  if(themeDark){
-    const l = yiqLuma(pillBg);
-    pillText = (l >= 160) ? "#111111" : "#e5e7eb";
-    pillMuted = mixHex(pillText, pillBg, 0.55);
-  } else {
-    pillText = "#111111";
-    pillMuted = mixHex(base, "#111111", 0.70);
-  }
-
-  const pillBorder = themeDark ? mixHex(base, "#ffffff", 0.22) : mixHex(base, "#111111", 0.90);
-
-  document.documentElement.style.setProperty("--pillBg", pillBg);
-  document.documentElement.style.setProperty("--pillText", pillText);
-  document.documentElement.style.setProperty("--pillBorder", pillBorder);
-  document.documentElement.style.setProperty("--pillMuted", pillMuted);
-}
-
-
-function draftKey(iso){ return `draft:${iso}`; }
-
-function fmtTimeHM(iso){
-  if(!iso) return "";
-  const d = new Date(iso);
-  if(!Number.isFinite(d.getTime())) return "";
-  const hh = String(d.getHours()).padStart(2,'0');
-  const mm = String(d.getMinutes()).padStart(2,'0');
-  return `${hh}:${mm}`;
-}
-
-function safeNum(x){
-  const n = Number(x);
-  return Number.isFinite(n) ? n : 0;
-}
-
-async function copyToClipboard(text){
-  const s = String(text ?? "");
-  try{
-    if(navigator.clipboard?.writeText){
-      await navigator.clipboard.writeText(s);
-      return true;
-    }
-  } catch(e){}
-
-  const ta = document.createElement("textarea");
-  ta.value = s;
-  ta.setAttribute("readonly", "");
-  ta.style.position = "fixed";
-  ta.style.left = "-9999px";
-  document.body.appendChild(ta);
-  ta.select();
-  try{ document.execCommand("copy"); } catch(e){}
-  ta.remove();
-  return true;
-}
-
-function buildMealSnapshot(m){
-  if(!m) return null;
-  return {
-    id: m.id,
-    category: m.category,
-    name: m.name,
-    calories: Math.round(safeNum(m.calories)),
-    proteinG: Math.round(safeNum(m.proteinG)),
-    fluidMl: Math.round(safeNum(m.fluidMl)),
-    kcalPer100g: (m.kcalPer100g === undefined || m.kcalPer100g === null || m.kcalPer100g === "") ? null : safeNum(m.kcalPer100g),
-    portionG: (m.portionG === undefined || m.portionG === null || m.portionG === "") ? null : safeNum(m.portionG)
-  };
-}
-
-function mealFromEntry(e){
-  const snap = e?.mealSnapshot || e?.snapshot || null;
-  if(snap) return snap;
-  const m = getMealById(e?.mealId);
-  return m ? buildMealSnapshot(m) : {id:e?.mealId ?? null, category:null, name:"??", calories:0, proteinG:0, fluidMl:0, kcalPer100g:null, portionG:null};
-}
-
-function buildActivitySnapshot(a){
-  if(!a) return null;
-  return { id: a.id, name: a.name, kcalPerHour: Math.round(safeNum(a.kcalPerHour)) };
-}
-
-function activityFromEntry(e){
-  const snap = e?.activitySnapshot || e?.snapshot || null;
-  if(snap) return snap;
-  const a = activities.find(x => x.id === e?.id);
-  return a ? buildActivitySnapshot(a) : {id:e?.id ?? null, name:"??", kcalPerHour:0};
-}
-
- // [{entryId, mealId}]
-let todayActivityEntries = []; // [{id, minutes}]
-
-function setStatus(msg){
-  const el = document.getElementById("status");
-  el.textContent = msg;
-  if(statusTimer) clearTimeout(statusTimer);
-  if(msg) statusTimer = setTimeout(() => el.textContent = "", 4000);
-}
-function pad2(n){ return String(n).padStart(2,"0"); }
-function isoFromDate(d){ return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`; }
-function escapeHtml(s){
-  return String(s ?? "")
-    .replace(/[&<>"']/g, m => ({'&':"&amp;",'<':"&lt;",'>':"&gt;",'"':"&quot;","'":"&#039;"}[m]));
-}
-function uid(prefix){
-  if(crypto && crypto.randomUUID) return `${prefix}-${crypto.randomUUID()}`;
-  return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-}
-
-/* ---------- Date debug ---------- */
-async function getAppDateISO(){
-  const dbg = await metaGet("debug.enabled");
-  if(dbg){
-    let cur = await metaGet("debug.dateISO");
-    if(!cur) cur = isoFromDate(new Date());
-    await metaSet("debug.dateISO", cur);
-    return cur;
-  }
-  return isoFromDate(new Date());
-}
-async function advanceAppDateIfDebug(){
-  const dbg = await metaGet("debug.enabled");
-  if(!dbg) return;
-  const curISO = await metaGet("debug.dateISO") || isoFromDate(new Date());
-  const [y,m,d] = curISO.split("-").map(x => parseInt(x,10));
-  const dt = new Date(y, m-1, d);
-  dt.setDate(dt.getDate()+1);
-  await metaSet("debug.dateISO", isoFromDate(dt));
-}
-async function refreshDateUI(){
-  const todayISO = await getAppDateISO();
-  if(!viewDateISO) viewDateISO = todayISO;
-
-  const dbg = await metaGet("debug.enabled");
-
-  document.getElementById("uiDate").textContent = viewDateISO;
-
-  const tags = [];
-  if(dbg) tags.push("debug");
-  if(viewDateISO !== todayISO) tags.push("просмотр");
-  document.getElementById("uiDebugTag").textContent = tags.length ? ("(" + tags.join(", ") + ")") : "";
-
-  const top = document.querySelector(".top");
-  if(top){
-    const isPast = (viewDateISO !== todayISO);
-    top.classList.toggle("past", isPast);
-    applyHeaderPalette(isPast);
-  } else {
-    applyHeaderPalette(viewDateISO !== todayISO);
-  }
-
-  const dp = document.getElementById("datePicker");
-  if(dp) dp.value = viewDateISO;
-}
-
-/* ---------- Calories ---------- */
-function getMealById(id){ return meals.find(m => m.id === id); }
-function calcEatKcal(){
-  let sum = 0;
-  for(const e of (todayMealEntries || [])){
-    const m = mealFromEntry(e);
-    sum += safeNum(m?.calories);
-  }
-  return Math.round(sum);
-}
-
-function calcEatProteinG(){
-  let sum = 0;
-  for(const e of (todayMealEntries || [])){
-    const m = mealFromEntry(e);
-    sum += safeNum(m?.proteinG);
-  }
-  return Math.round(sum);
-}
-function calcFluidFromMealsMl(){
-  let sum = 0;
-  for(const e of (todayMealEntries || [])){
-    const m = mealFromEntry(e);
-    sum += safeNum(m?.fluidMl);
-  }
-  return Math.round(sum);
-}
-function calcProteinTargetG(){
-  const w = Number(document.getElementById("weight")?.value || 0);
-  const ppk = Number(window.proteinPerKg ?? 0.83);
-  if(!Number.isFinite(w) || w <= 0) return 0;
-  if(!Number.isFinite(ppk) || ppk <= 0) return 0;
-  return Math.round(w * ppk);
-}
-function calcWaterGoalMl(){
-  const g = Number(window.waterGoalMl ?? 2000);
-  return (Number.isFinite(g) && g >= 0) ? Math.round(g) : 2000;
-}
-function calcWaterTotalMl(){
-  return Math.round(Number(todayWaterMl || 0) + calcFluidFromMealsMl());
-}
-
-function calcBurnKcalExercise(){
-  let sum = 0;
-  for(const e of (todayActivityEntries || [])){
-    const a = activityFromEntry(e);
-    sum += (safeNum(a?.kcalPerHour) * safeNum(e?.minutes) / 60);
-  }
-  return Math.round(sum);
-}
-function calcBasalKcalPerDayFrom(weight){
-  const h = Number(document.getElementById("setHeight")?.value || 0);
-  const age = Number(document.getElementById("setAge")?.value || 0);
-  const sex = String(document.getElementById("setSex")?.value || "female");
-  const w = Number(weight || 0) || 55;
-  if(!h || !age || !w) return 0;
-  const s = (sex === "male") ? 5 : -161;
-  const base = 10*w + 6.25*h - 5*age + s;
-  const mult = Number(window.bmrMultiplier || 1);
-  return Math.round(base * mult);
-}
-function calcBasalKcalPerDay(){
-  const w = Number(document.getElementById("weight")?.value || 55);
-  return calcBasalKcalPerDayFrom(w);
-}
-function calcDayLimitKcal(){
-  const basal = calcBasalKcalPerDay();
-  const burnExercise = calcBurnKcalExercise();
-  const goal = Number(window.goalKcal || 0);
-  return Math.round(basal + burnExercise + goal);
-}
-function updateLimitBar(eat, limit){
-  const bar = document.getElementById("limitBar");
-  if(!limit || !Number.isFinite(limit) || limit <= 0){ bar.style.width = "0%"; return; }
-  const pct = eat / limit * 100;
-  const pctClamped = Math.max(0, Math.min(100, pct));
-  bar.style.width = pctClamped.toFixed(0) + "%";
-}
-function applyNettoMode(eat, burnExercise, basal, limit){
-  const mode = String(window.nettoMode || "nettonobmr");
-  const nettoTitle = document.getElementById("nettoTitle");
-  if(mode === "consumedlimit"){
-    nettoTitle.textContent = "Съедено / лимит";
-    document.getElementById("todayNet").textContent = `${eat} / ${limit}`;
-    document.getElementById("nettoLabel").textContent = "";
-    return;
-  }
-  if(mode === "remaining"){
-    nettoTitle.textContent = "Осталось";
-    document.getElementById("todayNet").textContent = Math.round((limit || 0) - eat);
-    document.getElementById("nettoLabel").textContent = "ккал";
-    return;
-  }
-  if(mode === "nettowithbmr"){
-    nettoTitle.textContent = "Нетто (с BMR)";
-    document.getElementById("todayNet").textContent = eat - burnExercise - basal;
-    document.getElementById("nettoLabel").textContent = "ккал";
-    return;
-  }
-  nettoTitle.textContent = "Нетто";
-  document.getElementById("todayNet").textContent = eat - burnExercise;
-  document.getElementById("nettoLabel").textContent = "ккал";
-}
-function updateTopTotals(){
-  const eat = calcEatKcal();
-  const burnExercise = calcBurnKcalExercise();
-  const basal = calcBasalKcalPerDay();
-  const limit = calcDayLimitKcal();
-  document.getElementById("todayEat").textContent = eat;
-  document.getElementById("todayBurn").textContent = burnExercise;
-  document.getElementById("bmrInfo").textContent = basal ? `BMR: ${basal} (x${Number(window.bmrMultiplier||1).toFixed(2)})` : "";
-  applyNettoMode(eat, burnExercise, basal, limit);
-  updateLimitBar(eat, limit);
-
-  // Tracker: protein + water
-  const pEat = calcEatProteinG();
-  const pTarget = calcProteinTargetG();
-  const wTotal = calcWaterTotalMl();
-  const wGoal = calcWaterGoalMl();
-  const pEl = document.getElementById("uiProtein");
-  const wEl = document.getElementById("uiWater");
-  if(pEl) pEl.textContent = `${pEat}/${pTarget} г`;
-  if(wEl) wEl.textContent = `${wTotal}/${wGoal} мл`;
-
-}
-function cycleNettoMode(){
-  const order = ["nettonobmr","nettowithbmr","consumedlimit","remaining"];
-  const cur = String(window.nettoMode || order[0]);
-  const idx = Math.max(0, order.indexOf(cur));
-  const next = order[(idx+1) % order.length];
-  window.nettoMode = next;
-  const sel = document.getElementById("nettoMode");
-  if(sel) sel.value = next;
-  metaSet("settings.nettoMode", next);
-  updateTopTotals();
-}
-
-/* ---------- Draft ---------- */
-async function saveDraft(){
-  const date = viewDateISO || await getAppDateISO();
-  const draft = {
-    date,
-    todayMealEntries: Array.from(todayMealEntries || []),
-    todayActivityEntries: Array.from(todayActivityEntries || []),
-    todayWaterMl: Number(todayWaterMl || 0),
-    weight: document.getElementById("weight").value,
-    steps: document.getElementById("steps").value,
-    notes: document.getElementById("notes").value
-  };
-  await metaSet(draftKey(date), draft);
-}
-async function migrateOldDraftToMealEntries(draft){
-  const out = [];
-  const seen = new Set();
-  if(Array.isArray(draft?.selectedMealIds)){
-    for(const id of draft.selectedMealIds){
-      if(!id || seen.has(id)) continue;
-      out.push({entryId: uid("e"), mealId: id});
-      seen.add(id);
-    }
-  }
-  if(draft?.snackCounts && typeof draft.snackCounts === "object"){
-    for(const [id, cnt] of Object.entries(draft.snackCounts)){
-      const n = Math.max(0, Math.round(Number(cnt || 0)));
-      for(let i=0;i<n;i++) out.push({entryId: uid("e"), mealId: id});
-    }
-  }
-  return out;
-}
-function normalizeMealEntries(entries){
-  const arr = Array.isArray(entries) ? entries : [];
-  return arr.map(e => {
-    if(!e) return null;
-    const entryId = e.entryId || uid("e");
-    const mealId = e.mealId || e.id || null;
-    const snap = e.mealSnapshot || e.snapshot || (mealId ? buildMealSnapshot(getMealById(mealId)) : null);
-    return { ...e, entryId, mealId, mealSnapshot: snap, createdAt: e.createdAt || e.addedAt || null };
-  }).filter(Boolean);
-}
-
-function normalizeActivityEntries(entries){
-  const arr = Array.isArray(entries) ? entries : [];
-  return arr.map(e => {
-    if(!e) return null;
-    const id = e.id || e.actId || e.activityId || null;
-    const minutes = Math.round(safeNum(e.minutes));
-    const snap = e.activitySnapshot || e.snapshot || (id ? buildActivitySnapshot(activities.find(x=>x.id===id)) : null);
-    return { ...e, id, minutes, activitySnapshot: snap, createdAt: e.createdAt || e.addedAt || null };
-  }).filter(Boolean);
-}
-
-async function migrateLegacyDraftOnce(){
-  const legacy = await metaGet("draft");
-  if(!legacy || !legacy.date) return;
-  const key = draftKey(legacy.date);
-  const existing = await metaGet(key);
-  if(existing) return;
-  await metaSet(key, legacy);
-  await metaSet("draft", null);
-}
-
-async function loadDraft(){
-  const savedWeight = await metaGet("profile.weight");
-  const date = viewDateISO || await getAppDateISO();
-
-  const draft = await metaGet(draftKey(date));
-  if(draft && draft.date === date){
-    if(Array.isArray(draft.todayMealEntries)) todayMealEntries = normalizeMealEntries(draft.todayMealEntries);
-    else todayMealEntries = normalizeMealEntries(await migrateOldDraftToMealEntries(draft));
-
-    todayActivityEntries = normalizeActivityEntries(draft.todayActivityEntries);
-    todayWaterMl = Number(draft.todayWaterMl || 0);
-
-    document.getElementById("weight").value = (draft.weight ?? "");
-    document.getElementById("steps").value = (draft.steps ?? "");
-    document.getElementById("notes").value = (draft.notes ?? "");
-  } else {
-    const log = await txGet("logs", date);
-    if(log){
-      todayMealEntries = normalizeMealEntries(log.mealEntries || []);
-      todayActivityEntries = normalizeActivityEntries(log.activityEntries || []);
-      todayWaterMl = Number(log.waterMlExtra || 0);
-
-      document.getElementById("weight").value = (log.weight ?? "");
-      document.getElementById("steps").value = (log.steps ?? "");
-      document.getElementById("notes").value = (log.notes ?? "");
-    } else {
-      todayMealEntries = [];
-      todayActivityEntries = [];
-      todayWaterMl = 0;
-      document.getElementById("steps").value = "";
-      document.getElementById("notes").value = "";
-    }
-  }
-
-  if(!String(document.getElementById("weight").value || "").trim() && savedWeight !== null && savedWeight !== undefined){
-    document.getElementById("weight").value = String(savedWeight);
-  }
-}
-async function autoSaveDraftIfDateChanged(){
-  // v17: drafts are stored per date (meta: draft:YYYY-MM-DD)
-  return;
-}
-
-/* ---------- Render food ---------- */
-function sortMaybeFav(list){
-  if(!window.favoritesEnabled) return list;
-  return list.slice().sort((a,b) =>
-    Number(!!b.favorite) - Number(!!a.favorite) ||
-    String(a.name).localeCompare(String(b.name), "ru")
-  );
-}
-function mealCardHtml(m){
-  const star = window.favoritesEnabled
-    ? `<button class="btn secondary tiny" data-fav-meal="${escapeHtml(m.id)}" title="Избранное" style="padding:4px 8px">${m.favorite ? "★" : "☆"}</button>`
-    : "";
-  return `
-    <div class="card" data-meal-card="${escapeHtml(m.id)}">
-      <div class="mealCardHead">
-        <div>
-          <div style="font-weight:900">${escapeHtml(m.name)}</div>
-          ${m.short ? `<div class="muted mealMeta">${escapeHtml(m.short)}</div>` : ``}
-          ${m.ingredients ? `<div class="muted mealMeta">${escapeHtml(m.ingredients)}</div>` : ``}
-          ${(Number(m.proteinG||0)||Number(m.fluidMl||0)) ? `<div class="muted mealMeta">Б: ${escapeHtml(m.proteinG||0)} г • Ж: ${escapeHtml(m.fluidMl||0)} мл</div>` : ``}
-        </div>
-        <div style="text-align:right">
-          <div class="kcal">${escapeHtml(m.calories)}</div>
-        </div>
-      </div>
-      <div class="mealCardActions">
-        ${star}
-        <button class="btn tiny" data-meal-eat="${escapeHtml(m.id)}">Съесть</button>
+  <div class="modalBack" id="secondaryModalBack" style="z-index: 1200;">
+    <div class="modal">
+      <h3 id="secondaryModalTitle"></h3>
+      <div id="secondaryModalBody"></div>
+      <div class="actions">
+        <button class="btn secondary" id="secondaryModalCancel">Отмена</button>
+        <button class="btn" id="secondaryModalOk">OK</button>
       </div>
     </div>
-  `;
-}
-function renderMealCategory(cat, listId){
-  const root = document.getElementById(listId);
-  const list = sortMaybeFav(meals.filter(m => m.category === cat));
-  if(!list.length){
-    root.innerHTML = `<div class="card"><div style="font-weight:900">Пусто</div><div class="muted">Добавь блюдо.</div></div>`;
-    return;
-  }
-  root.innerHTML = list.map(mealCardHtml).join("");
-}
-function renderTodayByCategory(cat, todayListId){
-  const root = document.getElementById(todayListId);
-  if(!root) return;
+  </div>
 
-  const entries = (todayMealEntries || []).filter(e => {
-    const m = mealFromEntry(e);
-    return m && m.category === cat;
-  });
-
-  if(!entries.length){
-    root.innerHTML = `<div class="muted">Пока нет.</div>`;
-    return;
-  }
-
-  root.innerHTML = entries.map(e => {
-    const m = mealFromEntry(e);
-    return `
-      <div class="itemRow">
-        <div>
-          <div style="font-weight:900">${escapeHtml(m?.name ?? "??")}</div>
-          <div class="muted">${fmtTimeHM(e.createdAt) ? (fmtTimeHM(e.createdAt) + " • ") : ""}${escapeHtml(m?.calories ?? 0)} ккал • Б ${escapeHtml(m?.proteinG ?? 0)} г • Ж ${escapeHtml(m?.fluidMl ?? 0)} мл</div>
+  <div class="modalBack" id="recipeBuilderModalBack">
+    <div class="modal" id="recipeBuilderModal">
+      <h3>Конструктор рецепта</h3>
+      <div id="recipeBuilderBody">
+        <div class="card">
+          <div class="muted">Название рецепта</div>
+          <input id="recipeName" placeholder="Напр. Курица с рисом" />
+          <div class="muted" style="margin-top:10px">Короткое описание</div>
+          <input id="recipeShort" placeholder="Напр. На 2 порции" />
         </div>
-        <div>
-          <button class="btn danger tiny" data-del-meal-entry="${escapeHtml(e.entryId)}">Удалить</button>
+        
+        <button class="btn secondary" style="width:100%; margin-top:10px" id="btnAddIngredient">+ Добавить ингредиент</button>
+        
+        <div id="recipeIngredientList"></div>
+        
+        <div class="card" style="margin-top:10px">
+          <div class="muted">Инструкции по приготовлению</div>
+          <textarea id="recipePrep" placeholder="Шаг 1, Шаг 2..."></textarea>
         </div>
-      </div>
-    `;
-  }).join("");
-}
-function renderFoodAll(){
-  renderMealCategory("breakfast", "breakfastList");
-  renderMealCategory("lunch", "lunchList");
-  renderMealCategory("dinner", "dinnerList");
-  renderMealCategory("treat", "treatList");
-  renderMealCategory("snack", "snackList");
-}
 
-function renderDayActivities(){
-  const root = document.getElementById("dayActivitiesList");
-  if(!root) return;
-
-  if(!(todayActivityEntries || []).length){
-    root.innerHTML = `<div class="muted">Пока нет.</div>`;
-    return;
-  }
-
-  root.innerHTML = (todayActivityEntries || []).map((e, idx) => {
-    const a = activityFromEntry(e);
-    const burn = Math.round(safeNum(a?.kcalPerHour) * safeNum(e?.minutes) / 60);
-    return `
-      <div class="itemRow">
-        <div>
-          <div style="font-weight:900">${escapeHtml(a?.name ?? "??")}</div>
-          <div class="muted">${fmtTimeHM(e.createdAt) ? (fmtTimeHM(e.createdAt) + " • ") : ""}${escapeHtml(e.minutes)} мин • ${burn} ккал</div>
-        </div>
-        <div>
-          <button class="btn danger tiny" data-del-act-idx="${idx}">Удалить</button>
-        </div>
-      </div>
-    `;
-  }).join("");
-}
-
-function renderDaySummary(){
-  renderTodayByCategory("breakfast", "dayBreakfastList");
-  renderTodayByCategory("lunch", "dayLunchList");
-  renderTodayByCategory("dinner", "dayDinnerList");
-  renderTodayByCategory("treat", "dayTreatList");
-  renderTodayByCategory("snack", "daySnacksList");
-  renderDayActivities();
-}
-
-/* ---------- Activities ---------- */
-function renderActivities(){
-  const listEl = document.getElementById("activityList");
-  const list = sortMaybeFav(activities.slice());
-  if(!list.length){
-    listEl.innerHTML = `<div class="card"><div style="font-weight:900">Пусто</div><div class="muted">Добавь активность.</div></div>`;
-  } else {
-    listEl.innerHTML = list.map(a => {
-      const star = window.favoritesEnabled
-        ? `<button class="btn secondary tiny" data-fav-act="${escapeHtml(a.id)}" title="Избранное" style="padding:4px 8px">${a.favorite ? "★" : "☆"}</button>`
-        : "";
-      return `
-        <div class="card" data-act-card="${escapeHtml(a.id)}">
-          <div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-start">
+        <div class="card" style="margin-top:10px">
+          <div style="font-weight:900">Итого (на весь рецепт):</div>
+          <div class="kcal" id="recipeTotalKcal">0 ккал</div>
+          <div class="muted">
+            Белки: <span id="recipeTotalProtein">0</span> г, 
+            Жидкость: <span id="recipeTotalFluid">0</span> мл
+          </div>
+          <div class="grid2" style="margin-top:10px; border-top:1px solid #eee; padding-top:10px">
             <div>
-              <div style="font-weight:900">${escapeHtml(a.name)}</div>
-              <div class="muted">${escapeHtml(a.kcalPerHour)} ккал/ч</div>
+              <div class="muted">Сырой вес (г)</div>
+              <div id="recipeRawWeight" style="font-weight:900; margin-top:4px">0</div>
             </div>
-            <div style="min-width: 240px">
-              <div style="display:flex; gap:8px; justify-content:flex-end; align-items:center">
-                ${star}
-              </div>
-              <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-top:8px;">
-                <input type="number" min="0" step="5" inputmode="numeric" placeholder="ккал" enterkeyhint="done" data-act-kcal="${escapeHtml(a.id)}">
-                <input type="number" min="0" step="5" inputmode="numeric" placeholder="мин" enterkeyhint="done" data-act-min="${escapeHtml(a.id)}">
-              </div>
-              <button class="btn" style="width:100%; margin-top:8px" data-act-add="${escapeHtml(a.id)}">Добавить</button>
+            <div>
+              <div class="muted">Готовый вес (г) <span id="recipeWeightDiff" style="font-size:11px; font-weight:normal"></span></div>
+              <input type="number" id="recipeCookedWeight" value="0" style="margin-top:4px" />
             </div>
           </div>
         </div>
-      `;
-    }).join("");
-  }
+      </div>
+      <div class="actions">
+        <button class="btn danger" id="btnRecipeDelete" style="display:none; margin-right:auto">Удалить</button>
+        <button class="btn secondary" id="btnRecipeShare" style="display:none">Поделиться</button>
+        <button class="btn secondary" id="btnRecipeCancel">Отмена</button>
+        <button class="btn" id="btnRecipeSave">Сохранить</button>
+      </div>
+    </div>
+  </div>
 
-  const todayEl = document.getElementById("todayActivitiesList");
-  if(todayEl){
-    if(!todayActivityEntries.length){
-      todayEl.innerHTML = `<div class="muted">Пока нет.</div>`;
-    } else {
-      todayEl.innerHTML = todayActivityEntries.map((e, idx) => {
-        const a = activityFromEntry(e);
-        const burn = Math.round(safeNum(a?.kcalPerHour) * safeNum(e?.minutes) / 60);
-        return `
-          <div class="itemRow">
-            <div>
-              <div style="font-weight:900">${escapeHtml(a?.name ?? "??")}</div>
-              <div class="muted">${fmtTimeHM(e.createdAt) ? (fmtTimeHM(e.createdAt) + " • ") : ""}${escapeHtml(e.minutes)} мин • ${burn} ккал</div>
-            </div>
-            <div>
-              <button class="btn danger tiny" data-del-act-idx="${idx}">Удалить</button>
+  <div class="modalBack" id="classificationModalBack">
+    <div class="modal" id="classificationModal">
+      <h3>Выберите категорию</h3>
+      <div id="classificationBody" style="display:flex; flex-direction:column; gap:10px">
+        <button class="btn secondary btn-classify" data-classify="breakfast" style="height:60px; font-size:18px">Завтрак</button>
+        <button class="btn secondary btn-classify" data-classify="lunch" style="height:60px; font-size:18px">Обед</button>
+        <button class="btn secondary btn-classify" data-classify="dinner" style="height:60px; font-size:18px">Ужин</button>
+        <button class="btn secondary btn-classify" data-classify="snack" style="height:60px; font-size:18px">Перекус</button>
+        <button class="btn secondary btn-classify" data-classify="treat" style="height:60px; font-size:18px">Вкусняшки</button>
+      </div>
+      <div class="actions">
+        <button class="btn secondary" id="cancelClassifyBtn">Отмена</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modalBack" id="shareModalBack" style="z-index: 1300;">
+    <div class="modal" id="shareModal">
+      <h3>Поделиться</h3>
+      <div id="shareModalBody">
+        <div class="card" style="text-align:center">
+          <div id="shareItemName" style="font-weight:900; margin-bottom:10px"></div>
+                <div id="qrContainer" style="margin:20px 0; display:flex; justify-content:center; align-items:center; min-height:200px">
+                  <canvas id="shareQR" style="max-width:100%; height:auto"></canvas>
+                  <div id="qrError" class="muted hidden" style="padding:40px 20px; border:2px dashed #ccc; width:100%; text-align:center">
+                    Рецепт слишком большой для QR-кода.<br>Используйте копирование текста.
+                  </div>
+                </div>          <button class="btn secondary" id="btnCopyShareText" style="width:100%">Копировать текст</button>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn" id="closeShareBtn">Закрыть</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modalBack" id="importModalBack" style="z-index: 1300;">
+    <div class="modal" id="importModal">
+      <h3>Импорт данных</h3>
+      <div id="importModalBody">
+        <!-- Step 1: Input -->
+        <div id="importStepInput">
+          <div class="card">
+            <div class="muted">Вставьте текст или отсканируйте код</div>
+            <textarea id="importPasteText" style="margin-top:10px; height:100px" placeholder='{"v":2, ...}'></textarea>
+            <div style="display:flex; gap:10px; margin-top:10px">
+              <button class="btn secondary" id="btnImportClipboard" style="flex:1">Из буфера</button>
+              <button class="btn secondary" id="btnImportScan" style="flex:1">Сканировать</button>
             </div>
           </div>
-        `;
-      }).join("");
-    }
-  }
-}
-
-/* ---------- Modal ---------- */
-let modalOnOk = null;
-let modalOnDelete = null;
-let modalOnExport = null;
-
-function openModal(title, bodyHtml, okText="OK", showDelete=false, onOk=null, onDelete=null, onExport=null){
-  document.getElementById("modalTitle").textContent = title;
-  document.getElementById("modalBody").innerHTML = bodyHtml;
-  document.getElementById("modalOk").textContent = okText;
-
-  modalOnOk = onOk;
-  modalOnDelete = onDelete;
-
-  const delBtn = document.getElementById("modalDelete");
-  delBtn.style.display = showDelete ? "inline-block" : "none";
-  const expBtn = document.getElementById("modalExport");
-  expBtn.style.display = onExport ? "inline-block" : "none";
-  modalOnExport = onExport;
-
-  document.body.classList.add("modalOpen");
-  document.getElementById("modalBack").style.display = "block";
-}
-function closeModal(){
-  document.getElementById("modalBack").style.display = "none";
-  document.body.classList.remove("modalOpen");
-  document.getElementById("modalBody").innerHTML = "";
-  modalOnOk = null;
-  modalOnDelete = null;
-  modalOnExport = null;
-}
-function showDatePicker(){
-  const dp = document.getElementById("datePicker");
-  if(!dp) return;
-  try{ if(dp.showPicker) dp.showPicker(); else dp.click(); } catch(e){ dp.click(); }
-}
-
-async function applyViewDate(newISO){
-  const iso = String(newISO || "").trim();
-  if(!iso) return;
-
-  if(viewDateISO) await saveDraft();
-  viewDateISO = iso;
-
-  await refreshDateUI();
-  await loadDraft();
-
-  renderFoodAll();
-  renderDaySummary();
-  renderActivities();
-  renderDaySummary();
-  updateTopTotals();
-}
-
-function wireModalButtons(){
-  document.getElementById("modalCancel").addEventListener("click", closeModal);
-  document.getElementById("modalBack").addEventListener("click", (e) => {
-    if(e.target.id === "modalBack") closeModal();
-  });
-  document.getElementById("modalOk").addEventListener("click", async () => {
-    if(!modalOnOk){ closeModal(); return; }
-    const res = await modalOnOk();
-    if(res !== false) closeModal();
-  });
-  document.getElementById("modalExport").addEventListener("click", async () => {
-    if(!modalOnExport) return;
-    await modalOnExport();
-  });
-
-  document.getElementById("modalDelete").addEventListener("click", async () => {
-    if(!modalOnDelete) return;
-    if(!confirm("Удалить?")) return;
-    await modalOnDelete();
-    closeModal();
-  });
-}
-
-function mealModalBody(meal){
-  const cat = meal?.category ?? "breakfast";
-  return `
-    <div class="row2">
-      <div>
-        <div class="muted">Категория</div>
-        <select id="mCat">
-          <option value="breakfast" ${cat==="breakfast"?"selected":""}>Завтрак</option>
-          <option value="lunch" ${cat==="lunch"?"selected":""}>Обед</option>
-          <option value="dinner" ${cat==="dinner"?"selected":""}>Ужин</option>
-          <option value="treat" ${cat==="treat"?"selected":""}>Вкусняшки</option>
-          <option value="snack" ${cat==="snack"?"selected":""}>Перекус</option>
-        </select>
-      </div>
-      <div>
-        <div class="muted">Ккал (порция)</div>
-        <input id="mKcal" type="number" min="1" step="1" placeholder="100" value="${escapeHtml(meal?.calories ?? "")}">
-      </div>
-    </div>
-
-    <div class="row2" style="margin-top:10px">
-      <div>
-        <div class="muted">Ккал / 100 г</div>
-        <input id="mKcal100" type="number" min="0" step="1" placeholder="250" value="${escapeHtml(meal?.kcalPer100g ?? "")}">
-      </div>
-      <div>
-        <div class="muted">Вес порции (г)</div>
-        <input id="mPortionG" type="number" min="0" step="1" placeholder="150" value="${escapeHtml(meal?.portionG ?? "")}">
-      </div>
-    </div>
-
-    <div class="row2" style="margin-top:10px">
-      <div>
-        <div class="muted">Белок (г/порция)</div>
-        <input id="mProtein" type="number" min="0" step="1" placeholder="0" value="${escapeHtml(meal?.proteinG ?? "")}">
-      </div>
-      <div>
-        <div class="muted">Жидкость (мл/порция)</div>
-        <input id="mFluid" type="number" min="0" step="10" placeholder="0" value="${escapeHtml(meal?.fluidMl ?? "")}">
-      </div>
-    </div>
-
-
-    <div style="margin-top:10px">
-      <div class="muted">Название</div>
-      <input id="mName" placeholder="" value="${escapeHtml(meal?.name ?? "")}">
-    </div>
-
-    <div style="margin-top:10px">
-      <div class="muted">Коротко</div>
-      <input id="mShort" placeholder="" value="${escapeHtml(meal?.short ?? "")}">
-    </div>
-
-    <div style="margin-top:10px">
-      <div class="muted">Ингредиенты</div>
-      <textarea id="mIng" placeholder="">${escapeHtml(meal?.ingredients ?? "")}</textarea>
-    </div>
-
-    <div style="margin-top:10px">
-      <div class="muted">Приготовление</div>
-      <textarea id="mPrep" placeholder="">${escapeHtml(meal?.prep ?? "")}</textarea>
-    </div>
-  `;
-}
-async function openAddMealModal(defaultCategory){
-  openModal(
-    "Добавить блюдо",
-    mealModalBody({category: defaultCategory}),
-    "Добавить",
-    false,
-    async () => {
-      const name = document.getElementById("mName").value.trim();
-      const calories = Number(document.getElementById("mKcal").value);
-      if(!name){ setStatus("Название обязательно."); return false; }
-      if(!Number.isFinite(calories) || calories <= 0){ setStatus("Ккал должны быть > 0."); return false; }
-
-      const meal = {
-        id: uid("m"),
-        category: document.getElementById("mCat").value,
-        name,
-        calories: Math.round(calories),
-        short: document.getElementById("mShort").value.trim(),
-        ingredients: document.getElementById("mIng").value.trim(),
-        prep: document.getElementById("mPrep").value.trim(),
-        proteinG: Math.round(Number(document.getElementById("mProtein").value || 0)),
-        fluidMl: Math.round(Number(document.getElementById("mFluid").value || 0)),
-        favorite: false,
-        updatedAt: new Date().toISOString()
-      };
-
-      const k100 = String(document.getElementById("mKcal100")?.value ?? "").trim();
-      const g = String(document.getElementById("mPortionG")?.value ?? "").trim();
-      if(k100){
-        const n = Number(k100);
-        if(Number.isFinite(n) && n > 0) meal.kcalPer100g = Math.round(n);
-      }
-      if(g){
-        const n = Number(g);
-        if(Number.isFinite(n) && n > 0) meal.portionG = Math.round(n);
-      }
-
-      await txPut("meals", meal);
-      meals = await txGetAll("meals");
-      renderFoodAll();
-      renderDaySummary();
-      updateTopTotals();
-      setStatus("Добавлено.");
-    }
-  );
-
-  installMealKcalAutocalc();
-}
-async function openEditMealModal(mealId){
-  const meal = meals.find(x => x.id === mealId);
-  if(!meal) return;
-
-  openModal(
-    "Редактировать блюдо",
-    mealModalBody(meal),
-    "Сохранить",
-    true,
-    async () => {
-      const name = document.getElementById("mName").value.trim();
-      const calories = Number(document.getElementById("mKcal").value);
-      if(!name){ setStatus("Название обязательно."); return false; }
-      if(!Number.isFinite(calories) || calories <= 0){ setStatus("Ккал должны быть > 0."); return false; }
-
-      const updated = {
-        ...meal,
-        category: document.getElementById("mCat").value,
-        name,
-        calories: Math.round(calories),
-        short: document.getElementById("mShort").value.trim(),
-        ingredients: document.getElementById("mIng").value.trim(),
-        prep: document.getElementById("mPrep").value.trim(),
-        proteinG: Math.round(Number(document.getElementById("mProtein").value || 0)),
-        fluidMl: Math.round(Number(document.getElementById("mFluid").value || 0)),
-        updatedAt: new Date().toISOString()
-      };
-
-      const k100 = String(document.getElementById("mKcal100")?.value ?? "").trim();
-      const g = String(document.getElementById("mPortionG")?.value ?? "").trim();
-      if(k100){
-        const n = Number(k100);
-        if(Number.isFinite(n) && n > 0) updated.kcalPer100g = Math.round(n);
-      } else {
-        delete updated.kcalPer100g;
-      }
-      if(g){
-        const n = Number(g);
-        if(Number.isFinite(n) && n > 0) updated.portionG = Math.round(n);
-      } else {
-        delete updated.portionG;
-      }
-
-      await txPut("meals", updated);
-      meals = await txGetAll("meals");
-      renderFoodAll();
-      renderDaySummary();
-      updateTopTotals();
-      setStatus("Сохранено.");
-    },
-    async () => {
-      await txDelete("meals", meal.id);
-      meals = await txGetAll("meals");
-      renderFoodAll();
-      renderDaySummary();
-      updateTopTotals();
-      setStatus("Удалено.");
-    },
-    async () => {
-      await copyToClipboard(JSON.stringify({t:"meal", v:1, data: meal}));
-      setStatus("Экспортировано в буфер.");
-    }
-  );
-
-  installMealKcalAutocalc();
-}
-
-function installMealKcalAutocalc(){
-  const kcalPortion = document.getElementById("mKcal");
-  const kcal100 = document.getElementById("mKcal100");
-  const portionG = document.getElementById("mPortionG");
-  if(!kcalPortion || !kcal100 || !portionG) return;
-
-  const read = (el) => {
-    const s = String(el.value ?? "").trim();
-    if(!s) return null;
-    const n = Number(s);
-    return Number.isFinite(n) ? n : null;
-  };
-  const writeInt = (el, v) => {
-    if(v === null || v === undefined || !Number.isFinite(v)) return;
-    el.value = String(Math.round(v));
-  };
-
-  const recompute = () => {
-    const kp = read(kcalPortion);
-    const k100 = read(kcal100);
-    const g = read(portionG);
-
-    // If kcal/portion missing but k100 and grams exist -> compute kcal/portion
-    if(kp === null && k100 !== null && g !== null && g > 0){
-      writeInt(kcalPortion, k100 * g / 100);
-      return;
-    }
-
-    // If kcal/portion exists: treat it as master and fill missing one of (k100, grams)
-    if(kp !== null){
-      if(k100 === null && g !== null && g > 0){
-        writeInt(kcal100, kp * 100 / g);
-        return;
-      }
-      if(g === null && k100 !== null && k100 > 0){
-        writeInt(portionG, kp * 100 / k100);
-        return;
-      }
-    }
-  };
-
-  const handler = (ev) => {
-    if(ev.type === "keyup" && ev.key !== "Enter") return;
-    recompute();
-  };
-
-  [kcalPortion, kcal100, portionG].forEach(el => {
-    el.addEventListener("blur", handler);
-    el.addEventListener("keyup", handler);
-  });
-}
-
-
-
-function activityModalBody(act){
-  return `
-    <div class="row2">
-      <div>
-        <div class="muted">Название</div>
-        <input id="aName" placeholder="" value="${escapeHtml(act?.name ?? "")}">
-      </div>
-      <div>
-        <div class="muted">Ккал/час</div>
-        <input id="aKph" type="number" min="1" step="10" placeholder="300" value="${escapeHtml(act?.kcalPerHour ?? "")}">
-      </div>
-    </div>
-  `;
-}
-async function openAddActivityModal(){
-  openModal("Добавить активность", activityModalBody(null), "Сохранить", false, async () => {
-    const name = document.getElementById("aName").value.trim();
-    const kph = Number(document.getElementById("aKph").value);
-    if(!name){ setStatus("Название обязательно."); return false; }
-    if(!Number.isFinite(kph) || kph <= 0){ setStatus("Ккал/час должны быть > 0."); return false; }
-
-    await txPut("activities", {
-      id: uid("a"),
-      name,
-      kcalPerHour: Math.round(kph),
-      proteinG: Math.round(Number(document.getElementById("mProtein")?.value || 0)),
-      fluidMl: Math.round(Number(document.getElementById("mFluid")?.value || 0)),
-      favorite: false,
-      updatedAt: new Date().toISOString()
-    });
-
-    activities = await txGetAll("activities");
-    renderActivities();
-    setStatus("Сохранено.");
-  });
-}
-async function openEditActivityModal(actId){
-  const act = activities.find(x => x.id === actId);
-  if(!act) return;
-
-  openModal(
-    "Редактировать активность",
-    activityModalBody(act),
-    "Сохранить",
-    true,
-    async () => {
-      const name = document.getElementById("aName").value.trim();
-      const kph = Number(document.getElementById("aKph").value);
-      if(!name){ setStatus("Название обязательно."); return false; }
-      if(!Number.isFinite(kph) || kph <= 0){ setStatus("Ккал/час должны быть > 0."); return false; }
-
-      await txPut("activities", {
-        ...act,
-        name,
-        kcalPerHour: Math.round(kph),
-        updatedAt: new Date().toISOString()
-      });
-
-      activities = await txGetAll("activities");
-      renderActivities();
-      renderDaySummary();
-      updateTopTotals();
-      setStatus("Сохранено.");
-    },
-    async () => {
-      await txDelete("activities", act.id);
-      activities = await txGetAll("activities");
-      renderActivities();
-      renderDaySummary();
-      updateTopTotals();
-      setStatus("Удалено.");
-    },
-    async () => {
-      await copyToClipboard(JSON.stringify({t:"activity", v:1, data: act}));
-      setStatus("Экспортировано в буфер.");
-    }
-  );
-}
-
-/* ---------- Long press ---------- */
-function installLongPress(root, selector, getId, openEditor){
-  let t = null;
-  root.addEventListener("pointerdown", (ev) => {
-    const el = ev.target.closest(selector);
-    if(!el) return;
-    t = setTimeout(() => {
-      const id = getId(el);
-      openEditor(id);
-    }, 650);
-  });
-  const cancel = () => { if(t){ clearTimeout(t); t = null; } };
-  root.addEventListener("pointerup", cancel);
-  root.addEventListener("pointercancel", cancel);
-  root.addEventListener("pointerleave", cancel);
-
-  root.addEventListener("contextmenu", (ev) => {
-    ev.preventDefault();
-    const el = ev.target.closest(selector);
-    if(!el) return;
-    const id = getId(el);
-    openEditor(id);
-  });
-}
-
-/* ---------- Logs ---------- */
-async function renderLogs(){
-  const logs = await txGetAll("logs");
-  logs.sort((a,b) => b.date.localeCompare(a.date));
-  const el = document.getElementById("logList");
-  if(!logs.length){ el.textContent = "Пока пусто."; return; }
-  el.innerHTML = logs.slice(0,12).map(l => {
-    const limit = (l.limitCalories ?? "");
-    const rem = (l.remainingCalories ?? "");
-    const goal = (l.goalKcal ?? "");
-    return `
-      <div style="margin:8px 0">
-        <div><b>${escapeHtml(l.date)}</b> • ${escapeHtml(l.eatCalories ?? 0)} / ${escapeHtml(l.burnCalories ?? 0)} • нетто ${escapeHtml(l.netCalories ?? 0)}</div>
-        <div class="muted">лимит: ${escapeHtml(limit)} • осталось: ${escapeHtml(rem)} • цель: ${escapeHtml(goal)} • вес: ${escapeHtml(l.weight ?? "-")} • шаги: ${escapeHtml(l.steps ?? "-")} ${l.autoSaved ? "• autoSaved" : ""}</div>
-      </div>
-    `;
-  }).join("");
-}
-
-/* ---------- Settings ---------- */
-async function loadSettings(){
-  const h = await metaGet("settings.height");
-  const a = await metaGet("settings.age");
-  const sex = await metaGet("settings.sex");
-  const bmrMult = await metaGet("settings.bmrMultiplier");
-  const goalKcal = await metaGet("settings.goalKcal");
-  const proteinPerKg = await metaGet("settings.proteinPerKg");
-  const waterGoalMl = await metaGet("settings.waterGoalMl");
-
-  let mode = await metaGet("settings.nettoMode");
-  if(!mode){
-    const oldMode = await metaGet("settings.nettoTileMode");
-    const oldWithBmr = await metaGet("settings.nettoWithBmr");
-    if(oldMode === "consumedLimit") mode = "consumedlimit";
-    else if(oldMode === "remaining") mode = "remaining";
-    else mode = oldWithBmr ? "nettowithbmr" : "nettonobmr";
-    await metaSet("settings.nettoMode", mode);
-  }
-
-  const autoSave = await metaGet("settings.autoSaveOnNewDay");
-  const favEnabled = await metaGet("settings.favoritesEnabled");
-  const appTitle = await metaGet("settings.appTitle");
-
-  document.getElementById("setHeight").value = h ?? 152;
-  document.getElementById("setAge").value = a ?? 30;
-  document.getElementById("setSex").value = sex ?? "female";
-
-  const mult = (bmrMult === null || bmrMult === undefined || bmrMult === "") ? 1.2 : Number(bmrMult);
-  document.getElementById("bmrMultiplier").value = Number.isFinite(mult) ? mult : 1.2;
-
-  const goal = (goalKcal === null || goalKcal === undefined || goalKcal === "") ? -400 : Number(goalKcal);
-  document.getElementById("goalKcal").value = Number.isFinite(goal) ? goal : -400;
-
-  const ppk = (proteinPerKg === null || proteinPerKg === undefined || proteinPerKg === "") ? 0.83 : Number(proteinPerKg);
-  document.getElementById("proteinPerKg").value = Number.isFinite(ppk) ? ppk : 0.83;
-
-  const wGoal = (waterGoalMl === null || waterGoalMl === undefined || waterGoalMl === "") ? 2000 : Number(waterGoalMl);
-  document.getElementById("waterGoalMl").value = (Number.isFinite(wGoal) && wGoal >= 0) ? Math.round(wGoal) : 2000;
-
-
-  const okModes = ["nettonobmr","nettowithbmr","consumedlimit","remaining"];
-  mode = okModes.includes(String(mode)) ? String(mode) : "nettonobmr";
-  document.getElementById("nettoMode").value = mode;
-
-  document.getElementById("autoSaveOnNewDay").checked = (autoSave === null) ? true : !!autoSave;
-  document.getElementById("favoritesEnabled").checked = !!favEnabled;
-
-  document.getElementById("setAppTitle").value = appTitle ?? "";
-  document.getElementById("appTitle").textContent = appTitle ?? "Food Plan";
-
-  window.favoritesEnabled = !!favEnabled;
-  window.bmrMultiplier = Number.isFinite(mult) ? mult : 1.2;
-  window.goalKcal = Number.isFinite(goal) ? goal : -400;
-  window.proteinPerKg = Number.isFinite(ppk) ? ppk : 0.83;
-  window.waterGoalMl = (Number.isFinite(wGoal) && wGoal >= 0) ? Math.round(wGoal) : 2000;
-  window.nettoMode = mode;
-
-  const dbg = await metaGet("debug.enabled");
-  document.getElementById("dbgEnabled").checked = !!dbg;
-
-  const todayColsHidden = await metaGet("ui.todayHidden") || {};
-  applyTodayHiddenState(todayColsHidden);
-
-  // Theme
-  themeTopToday = await metaGet("theme.topToday");
-  themeTopPast = await metaGet("theme.topPast");
-  themeDark = !!(await metaGet("theme.dark"));
-
-  const elToday = document.getElementById("topColorToday");
-  const elPast = document.getElementById("topColorPast");
-  const elDark = document.getElementById("darkTheme");
-  if(elToday) elToday.value = String(themeTopToday || "#2f6fed");
-  if(elPast) elPast.value = String(themeTopPast || "#ec4899");
-  if(elDark) elDark.checked = !!themeDark;
-
-  applyTheme();
-
-}
-async function saveSettings(){
-  const h = Number(document.getElementById("setHeight").value || 0);
-  const a = Number(document.getElementById("setAge").value || 0);
-  const sex = String(document.getElementById("setSex").value || "female");
-  const bmrMult = Number(document.getElementById("bmrMultiplier").value || 1.2);
-  const goal = Number(document.getElementById("goalKcal").value || -400);
-  const proteinPerKg = Number(document.getElementById("proteinPerKg").value || 0.83);
-  const waterGoalMl = Number(document.getElementById("waterGoalMl").value || 2000);
-  const mode = String(document.getElementById("nettoMode").value || "nettonobmr");
-  const autoSave = document.getElementById("autoSaveOnNewDay").checked;
-  const favEnabled = document.getElementById("favoritesEnabled").checked;
-  const appTitle = document.getElementById("setAppTitle").value.trim();
-
-  const topToday = String(document.getElementById("topColorToday")?.value || "#2f6fed");
-  const topPast = String(document.getElementById("topColorPast")?.value || "#ec4899");
-  const dark = !!document.getElementById("darkTheme")?.checked;
-
-  if(!h || !a){ setStatus("Рост и возраст обязательны."); return; }
-  if(!Number.isFinite(bmrMult) || bmrMult < 1 || bmrMult > 2){ setStatus("BMR множитель: 1.00–2.00"); return; }
-  if(!Number.isFinite(goal) || goal < -3000 || goal > 3000){ setStatus("Цель: -3000…3000"); return; }
-  if(!Number.isFinite(proteinPerKg) || proteinPerKg < 0.2 || proteinPerKg > 3){ setStatus("Белок (г/кг): 0.20–3.00"); return; }
-  if(!Number.isFinite(waterGoalMl) || waterGoalMl < 0 || waterGoalMl > 10000){ setStatus("Вода (мл): 0–10000"); return; }
-  const okModes = ["nettonobmr","nettowithbmr","consumedlimit","remaining"];
-  if(!okModes.includes(mode)){ setStatus("Неизвестный режим."); return; }
-
-  await metaSet("settings.height", h);
-  await metaSet("settings.age", a);
-  await metaSet("settings.sex", sex);
-  await metaSet("settings.bmrMultiplier", bmrMult);
-  await metaSet("settings.goalKcal", goal);
-  await metaSet("settings.proteinPerKg", proteinPerKg);
-  await metaSet("settings.waterGoalMl", Math.round(waterGoalMl));
-  await metaSet("settings.nettoMode", mode);
-  await metaSet("settings.autoSaveOnNewDay", autoSave);
-  await metaSet("settings.favoritesEnabled", favEnabled);
-  await metaSet("settings.appTitle", appTitle);
-  await metaSet("theme.topToday", topToday);
-  await metaSet("theme.topPast", topPast);
-  await metaSet("theme.dark", !!dark);
-
-  themeTopToday = topToday;
-  themeTopPast = topPast;
-  themeDark = !!dark;
-  applyTheme();
-
-  document.getElementById("appTitle").textContent = appTitle || "Food Plan";
-
-  window.favoritesEnabled = favEnabled;
-  window.bmrMultiplier = bmrMult;
-  window.goalKcal = goal;
-  window.proteinPerKg = proteinPerKg;
-  window.waterGoalMl = Math.round(waterGoalMl);
-  window.nettoMode = mode;
-
-  renderFoodAll();
-  renderActivities();
-  updateTopTotals();
-  setStatus("Настройки сохранены.");
-}
-
-/* ---------- Shopping ---------- */
-async function loadShopping(){
-  const rows = await txGetAll("shopping");
-  document.getElementById("shopping").value = (rows.find(x => x.id === "main")?.text ?? "");
-}
-async function saveShopping(){
-  await txPut("shopping", {id:"main", text: document.getElementById("shopping").value, updatedAt: new Date().toISOString()});
-  setStatus("Сохранено.");
-}
-
-/* ---------- Backup ---------- */
-async function buildBackupObject(){
-  return {
-    schema: 17,
-    exportedAt: new Date().toISOString(),
-    meals: await txGetAll("meals"),
-    activities: await txGetAll("activities"),
-    logs: await txGetAll("logs"),
-    shopping: await txGetAll("shopping"),
-    meta: await txGetAll("meta")
-  };
-}
-function downloadJson(filename, obj){
-  const text = JSON.stringify(obj, null, 2);
-  const blob = new Blob([text], {type:"application/json"});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url; a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-}
-async function exportBackupNow(){
-  const date = viewDateISO || await getAppDateISO();
-  downloadJson(`backup-${date}.json`, await buildBackupObject());
-  setStatus("Экспорт готов.");
-}
-async function importBackup(file){
-  const obj = JSON.parse(await file.text());
-  if(!obj || ![1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17].includes(obj.schema)) throw new Error("Bad schema");
-  await txClear("meals");
-  await txClear("activities");
-  await txClear("logs");
-  await txClear("shopping");
-  await txClear("meta");
-  await txBulkPut("meals", obj.meals || []);
-  await txBulkPut("activities", obj.activities || []);
-  await txBulkPut("logs", obj.logs || []);
-  await txBulkPut("shopping", obj.shopping || []);
-  await txBulkPut("meta", obj.meta || []);
-}
-
-/* ---------- Persist ---------- */
-async function requestPersist(){
-  try{
-    if(navigator.storage?.persist){
-      const ok = await navigator.storage.persist();
-      setStatus(ok ? "Persistent storage включён." : "Persistent storage не включён.");
-    } else setStatus("persist() не поддерживается.");
-  }catch(e){
-    setStatus("Ошибка persistent storage.");
-  }
-}
-
-/* ---------- Seeds ---------- */
-function seedMealsIfEmpty(arr){
-  if(arr.length) return arr;
-  return [
-    {id:"b1",category:"breakfast",name:"Овсянка + банан",calories:320,short:"",ingredients:"",favorite:false},
-    {id:"l1",category:"lunch",name:"Курица + рис",calories:420,short:"",ingredients:"",favorite:false},
-    {id:"s1",category:"snack",name:"Яблоко",calories:55,short:"1 шт",favorite:false},
-    {id:"s2",category:"snack",name:"Йогурт",calories:60,short:"1 шт",favorite:false}
-  ];
-}
-function seedActivitiesIfEmpty(arr){
-  if(arr.length) return arr;
-  return [
-    {id:"a1",name:"Степпер",kcalPerHour:500,favorite:false},
-    {id:"a2",name:"Ходьба",kcalPerHour:250,favorite:false}
-  ];
-}
-
-/* ---------- Today blocks hide/show ---------- */
-const todayColMap = {
-  breakfast: {grid:"breakfastGrid", col:"breakfastTodayCol"},
-  lunch: {grid:"lunchGrid", col:"lunchTodayCol"},
-  dinner: {grid:"dinnerGrid", col:"dinnerTodayCol"},
-  treat: {grid:"treatGrid", col:"treatTodayCol"},
-  snacks: {grid:"snacksGrid", col:"snacksTodayCol"},
-  activities: {grid:"activitiesGrid", col:"activitiesTodayCol"}
-};
-function applyTodayHiddenState(state){
-  for(const [k, ids] of Object.entries(todayColMap)){
-    const hidden = !!state?.[k];
-    const col = document.getElementById(ids.col);
-    const grid = document.getElementById(ids.grid);
-    if(!col || !grid) continue;
-    col.classList.toggle("hidden", hidden);
-    if(hidden) grid.style.gridTemplateColumns = "1fr";
-    else grid.style.gridTemplateColumns = "";
-  }
-}
-async function toggleTodayCol(tabKey){
-  const cur = await metaGet("ui.todayHidden") || {};
-  cur[tabKey] = !cur[tabKey];
-  await metaSet("ui.todayHidden", cur);
-  applyTodayHiddenState(cur);
-}
-
-/* ---------- Food actions ---------- */
-function addMealToToday(mealId){
-  const m = getMealById(mealId);
-  todayMealEntries.push({
-    entryId: uid("e"),
-    mealId,
-    mealSnapshot: buildMealSnapshot(m),
-    createdAt: new Date().toISOString()
-  });
-}
-function deleteMealEntry(entryId){
-  todayMealEntries = (todayMealEntries || []).filter(e => e.entryId !== entryId);
-}
-
-/* ---------- Barcode lookup (Open Food Facts) ---------- */
-let lastOff = { barcode: null, product: null, kcal100: null, kcalServing: null, displayName: null };
-
-function offGetKcalFromNutriments(n){
-  if(!n || typeof n !== "object") return {kcal100: null, kcalServing: null};
-  let kcal100 = n["energy-kcal_100g"];
-  let kcalServing = n["energy-kcal_serving"];
-
-  if((kcal100 == null || kcal100 === "") && n["energy_100g"] != null){
-    const unit = String(n["energy_unit"] || "").toLowerCase();
-    const e = Number(n["energy_100g"]);
-    if(Number.isFinite(e) && unit === "kj") kcal100 = e / 4.184;
-    else if(Number.isFinite(e) && unit === "kcal") kcal100 = e;
-  }
-  if((kcalServing == null || kcalServing === "") && n["energy_serving"] != null){
-    const unit = String(n["energy_unit"] || "").toLowerCase();
-    const e = Number(n["energy_serving"]);
-    if(Number.isFinite(e) && unit === "kj") kcalServing = e / 4.184;
-    else if(Number.isFinite(e) && unit === "kcal") kcalServing = e;
-  }
-
-  const norm = (x) => {
-    const v = Number(x);
-    return Number.isFinite(v) ? Math.round(v) : null;
-  };
-  return {kcal100: norm(kcal100), kcalServing: norm(kcalServing)};
-}
-async function fetchOffProductByBarcode(code){
-  const cleaned = String(code || "").trim();
-  if(!cleaned) return null;
-  const url = `https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(cleaned)}?fields=code,product_name,product_name_en,brands,quantity,serving_size,nutriments,ingredients_text,ingredients_text_en`;
-  const r = await fetch(url);
-  if(!r.ok) throw new Error(`HTTP ${r.status}`);
-  const data = await r.json();
-  if(data && data.status === 0) return null;
-  if(data && data.product) return data.product;
-  if(data && data.code) return data;
-  return null;
-}
-function offPickDisplayName(p){
-  const name = p.product_name || p.product_name_en || "Без названия";
-  const brands = (p.brands || "").trim();
-  return brands ? `${name} (${brands})` : name;
-}
-async function ensureOffMealExists({barcode, product, category}){
-  const id = `off-${barcode}`;
-  let existing = meals.find(m => m.id === id);
-  const nutr = product?.nutriments || {};
-  const {kcal100, kcalServing} = offGetKcalFromNutriments(nutr);
-  const kcal = (kcalServing != null) ? kcalServing : (kcal100 != null ? kcal100 : 0);
-
-  const short =
-    (kcalServing != null) ? `OFF: ${kcalServing} ккал/порц` :
-    (kcal100 != null) ? `OFF: ${kcal100} ккал/100г` :
-    `OFF: нет ккал`;
-
-  const ingredients = product?.ingredients_text || product?.ingredients_text_en || "";
-
-  const baseMeal = {
-    id,
-    category,
-    name: offPickDisplayName(product),
-    calories: Math.max(1, Math.round(Number(kcal || 0) || 0)) || 1,
-    short,
-    ingredients,
-    prep: "",
-    proteinG: Math.round(Number(document.getElementById("mProtein")?.value || 0)),
-      fluidMl: Math.round(Number(document.getElementById("mFluid")?.value || 0)),
-      favorite: false,
-    updatedAt: new Date().toISOString(),
-    source: "openfoodfacts",
-    barcode: String(barcode)
-  };
-
-  if(existing){
-    existing = {...existing, ...baseMeal, favorite: existing.favorite ?? false};
-    await txPut("meals", existing);
-  } else {
-    await txPut("meals", baseMeal);
-  }
-
-  meals = await txGetAll("meals");
-  return id;
-}
-
-function renderOffProduct(product, code){
-  const root = document.getElementById("barcodeResult");
-  if(!product){
-    lastOff = { barcode: code, product: null, kcal100: null, kcalServing: null, displayName: null };
-    root.innerHTML = `<div class="card"><div style="font-weight:900">Не найдено</div><div class="muted">Штрихкод: ${escapeHtml(code)}</div></div>`;
-    return;
-  }
-
-  const displayName = offPickDisplayName(product);
-  const quantity = product.quantity || "";
-  const serving = product.serving_size || "";
-  const ingredients = product.ingredients_text || product.ingredients_text_en || "";
-  const nutr = product.nutriments || {};
-  const {kcal100, kcalServing} = offGetKcalFromNutriments(nutr);
-
-  lastOff = { barcode: code, product, kcal100, kcalServing, displayName };
-
-  const kcalLine = [
-    (kcal100 != null ? `<div><b>${kcal100}</b> ккал/100г</div>` : `<div class="muted">Ккал/100г: нет данных</div>`),
-    (kcalServing != null ? `<div><b>${kcalServing}</b> ккал/порц</div>` : `<div class="muted">Ккал/порция: нет данных</div>`)
-  ].join("");
-
-  root.innerHTML = `
-    <div class="card">
-      <div style="font-weight:900">${escapeHtml(displayName)}</div>
-      <div class="muted" style="margin-top:6px">
-        ${quantity ? `Упаковка: ${escapeHtml(quantity)}<br>` : ""}
-        ${serving ? `Порция: ${escapeHtml(serving)}<br>` : ""}
-        Штрихкод: ${escapeHtml(product.code || code)}
-      </div>
-
-      <div style="margin-top:10px">${kcalLine}</div>
-
-      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:12px">
-        <button class="btn secondary" id="btnOffAddTo">Добавить в…</button>
-        <button class="btn" id="btnOffEatSnack">Съесть (перекус)</button>
-      </div>
-
-      ${ingredients ? `<div style="margin-top:12px"><div class="muted">Ингредиенты</div><div>${escapeHtml(ingredients)}</div></div>` : `<div class="muted" style="margin-top:12px">Ингредиенты: нет данных</div>`}
-    </div>
-  `;
-
-  document.getElementById("btnOffAddTo").addEventListener("click", () => {
-    if(!lastOff?.product) return;
-
-    openModal("Добавить в меню", `
-      <div class="muted">Продукт</div>
-      <div style="font-weight:900">${escapeHtml(lastOff.displayName || "??")}</div>
-
-      <div style="margin-top:10px" class="row2">
-        <div>
-          <div class="muted">Куда добавить</div>
-          <select id="offAddCat">
-            <option value="breakfast">Завтрак</option>
-            <option value="lunch">Обед</option>
-            <option value="dinner">Ужин</option>
-            <option value="treat">Вкусняшки</option>
-            <option value="snack" selected>Перекусы</option>
-          </select>
         </div>
-        <div>
-          <div class="muted">Ккал (порция)</div>
-          <input id="offAddKcal" type="number" min="1" step="1" value="${escapeHtml(String((lastOff.kcalServing ?? lastOff.kcal100 ?? 1) || 1))}">
+
+        <!-- Step 2: Scanner -->
+        <div id="importStepScanner" class="hidden">
+          <div class="card">
+            <div class="scanOverlay">
+              <video id="importScanVideo" class="scanVideo" autoplay playsinline muted></video>
+              <div class="scanHint" id="importScanHint">Загрузка…</div>
+            </div>
+            <button class="btn danger" id="btnStopImportScan" style="width:100%; margin-top:10px">Отмена</button>
+          </div>
+        </div>
+
+        <!-- Step 3: Review & Conflict Resolution -->
+        <div id="importStepReview" class="hidden">
+          <div id="importReviewList"></div>
         </div>
       </div>
-
-      <div class="muted" style="margin-top:10px">Если указаны только ккал/100г — здесь можно оставить как 100г или вручную поправить “порцию”.</div>
-    `, "Добавить", false, async () => {
-      const cat = String(document.getElementById("offAddCat").value || "snack");
-      const kcal = Math.round(Number(document.getElementById("offAddKcal").value || 0));
-      if(!kcal || kcal <= 0){ setStatus("Ккал должны быть > 0."); return false; }
-
-      const mealId = await ensureOffMealExists({barcode:lastOff.barcode, product:lastOff.product, category: cat});
-      const m = meals.find(x => x.id === mealId);
-      await txPut("meals", {...m, calories: kcal, updatedAt: new Date().toISOString()});
-      meals = await txGetAll("meals");
-
-      renderFoodAll();
-      renderDaySummary();
-      updateTopTotals();
-      setStatus("Добавлено в меню.");
-    });
-  });
-
-  document.getElementById("btnOffEatSnack").addEventListener("click", async () => {
-    if(!lastOff?.product){ setStatus("Нет данных продукта."); return; }
-    const mealId = await ensureOffMealExists({barcode:lastOff.barcode, product:lastOff.product, category:"snack"});
-    addMealToToday(mealId);
-    await saveDraft();
-    renderFoodAll();
-    updateTopTotals();
-    setStatus("Добавлено в “Сегодня” → Перекусы.");
-  });
-}
-
-/* ---------- Scanner (ZXing) ---------- */
-let zxingControls = null;
-let zxingScanning = false;
-
-async function stopScan(){
-  zxingScanning = false;
-  try{ zxingControls?.stop?.(); }catch(e){}
-  zxingControls = null;
-
-  const video = document.getElementById("scanVideo");
-  if(video){
-    try{ video.pause(); }catch(e){}
-    video.srcObject = null;
-  }
-
-  document.getElementById("btnScanStart").classList.remove("hidden");
-  document.getElementById("btnScanStop").classList.add("hidden");
-  document.getElementById("scanCard").classList.add("hidden");
-}
-
-async function startScan(){
-  const hint = document.getElementById("scanHint");
-  const scanCard = document.getElementById("scanCard");
-  scanCard.classList.remove("hidden");
-
-  const video = document.getElementById("scanVideo");
-  video.setAttribute("playsinline", true);
-
-  // ZXing использует getUserMedia через constraints
-  const constraints = { video: { facingMode: { ideal: "environment" } }, audio: false };
-
-  hint.textContent = "Запрашиваю доступ к камере…";
-  zxingScanning = true;
-
-  const reader = new ZXingBrowser.BrowserMultiFormatReader();
-
-  try{
-    zxingControls = await reader.decodeFromConstraints(constraints, video, async (result, err, controls) => {
-      if(!zxingScanning) return;
-
-      if(result){
-        const text = String(result.getText?.() ?? result.text ?? "").trim();
-        if(text){
-          hint.textContent = `Найдено: ${text}`;
-          document.getElementById("barcodeInput").value = text;
-          await stopScan();
-          document.getElementById("btnBarcodeSearch").click();
-        }
-        return;
-      }
-
-      // на ошибках не стопаем — ZXing кидает NotFoundException пока не видит код
-      if(err){
-        // можно показать подсказку про освещение/фокус
-        hint.textContent = "Сканирую… (попробуй ближе/дальше и свет)";
-      }
-    });
-
-    document.getElementById("btnScanStart").classList.add("hidden");
-    document.getElementById("btnScanStop").classList.remove("hidden");
-
-    hint.textContent = "Сканирую…";
-  }catch(e){
-    hint.textContent = "Не удалось открыть камеру.";
-    setStatus("Камера недоступна (нужен HTTPS и разрешение)." );
-    await stopScan();
-  }
-}
-
-/* ---------- Barcode search wiring ---------- */
-function wireBarcodeSearch(){
-  const input = document.getElementById("barcodeInput");
-  const btn = document.getElementById("btnBarcodeSearch");
-  const pasteBtn = document.getElementById("btnBarcodePaste");
-
-  async function run(){
-    const code = String(input.value || "").trim();
-    if(!code){ setStatus("Введите штрихкод."); return; }
-    document.getElementById("barcodeResult").innerHTML = `<div class="card"><div class="muted">Поиск…</div></div>`;
-    try{
-      const p = await fetchOffProductByBarcode(code);
-      renderOffProduct(p, code);
-      setStatus(p ? "Готово." : "Не найдено.");
-    }catch(e){
-      document.getElementById("barcodeResult").innerHTML = `<div class="card"><div style="font-weight:900">Ошибка</div><div class="muted">${escapeHtml(e?.message || String(e))}</div></div>`;
-      setStatus("Ошибка поиска.");
-    }
-  }
-
-  btn.addEventListener("click", run);
-  input.addEventListener("keydown", (e) => {
-    if(e.key === "Enter"){ e.preventDefault(); run(); }
-  });
-
-  pasteBtn.addEventListener("click", async () => {
-    try{
-      const t = await navigator.clipboard.readText();
-      if(t) input.value = t.trim();
-      input.focus();
-    }catch(e){
-      setStatus("Не удалось прочитать буфер обмена.");
-    }
-  });
-
-  document.getElementById("btnScanStart").addEventListener("click", startScan);
-  document.getElementById("btnScanStop").addEventListener("click", stopScan);
-}
-
-/* ---------- Wire UI ---------- */
-function wireTabs(){
-  document.querySelectorAll(".tabbtn").forEach(btn => {
-    btn.addEventListener("click", () => {
-      document.querySelectorAll(".tabbtn").forEach(b => b.classList.remove("active"));
-      document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
-      btn.classList.add("active");
-      document.getElementById(btn.dataset.tab).classList.add("active");
-    });
-  });
-}
-function wireAddButtons(){
-  document.querySelectorAll("[data-add-meal]").forEach(btn => {
-    btn.addEventListener("click", () => openAddMealModal(btn.getAttribute("data-add-meal")));
-  });
-  document.getElementById("btnAddActivity")?.addEventListener("click", openAddActivityModal);
-}
-function wireDraftInputs(){
-  [
-    "weight","steps","notes",
-    "setHeight","setAge","setSex",
-    "bmrMultiplier","goalKcal","nettoMode",
-    "setAppTitle","autoSaveOnNewDay","favoritesEnabled",
-    "proteinPerKg","waterGoalMl"
-  ].forEach(id => {
-    const el = document.getElementById(id);
-    if(!el) return;
-
-    const handler = async () => {
-      window.bmrMultiplier = Number(document.getElementById("bmrMultiplier")?.value) || window.bmrMultiplier || 1.2;
-      window.goalKcal = Number(document.getElementById("goalKcal")?.value) || window.goalKcal || -400;
-      window.nettoMode = String(document.getElementById("nettoMode")?.value) || window.nettoMode || "nettonobmr";
-      window.proteinPerKg = Number(document.getElementById("proteinPerKg")?.value) || window.proteinPerKg || 0.83;
-      window.waterGoalMl = Number(document.getElementById("waterGoalMl")?.value) || window.waterGoalMl || 2000;
-      await saveDraft();
-      updateTopTotals();
-    };
-
-    el.addEventListener("input", handler);
-    el.addEventListener("change", handler);
-
-    if(id === "weight"){
-      el.addEventListener("change", async () => {
-        await metaSet("profile.weight", String(el.value ?? "").trim());
-      });
-    }
-  });
-}
-function wireGlobalClicks(){
-  document.body.addEventListener("click", async (ev) => {
-
-    const wAdd = ev.target.closest("[data-water-add]");
-    if(wAdd){
-      const add = Math.round(Number(wAdd.getAttribute("data-water-add") || 0));
-      if(add > 0){
-        todayWaterMl = Math.max(0, Math.round(Number(todayWaterMl || 0) + add));
-        await saveDraft();
-        updateTopTotals();
-        setStatus(`Вода: +${add} мл`);
-      }
-      return;
-    }
-    const wReset = ev.target.closest("[data-water-reset]");
-    if(wReset){
-      todayWaterMl = 0;
-      await saveDraft();
-      updateTopTotals();
-      setStatus("Вода: сброс.");
-      return;
-    }
-
-
-    const favMeal = ev.target.closest("[data-fav-meal]");
-    if(favMeal){
-      ev.preventDefault(); ev.stopPropagation();
-      const id = favMeal.getAttribute("data-fav-meal");
-      const m = meals.find(x => x.id === id);
-      if(m){
-        m.favorite = !m.favorite;
-        await txPut("meals", {...m, updatedAt:new Date().toISOString()});
-        meals = await txGetAll("meals");
-        renderFoodAll();
-        updateTopTotals();
-      }
-      return;
-    }
-
-    const favAct = ev.target.closest("[data-fav-act]");
-    if(favAct){
-      ev.preventDefault(); ev.stopPropagation();
-      const id = favAct.getAttribute("data-fav-act");
-      const a = activities.find(x => x.id === id);
-      if(a){
-        a.favorite = !a.favorite;
-        await txPut("activities", {...a, updatedAt:new Date().toISOString()});
-        activities = await txGetAll("activities");
-        renderActivities();
-        updateTopTotals();
-      }
-      return;
-    }
-
-    const eatBtn = ev.target.closest("[data-meal-eat]");
-    if(eatBtn){
-      const mealId = eatBtn.getAttribute("data-meal-eat");
-      addMealToToday(mealId);
-      await saveDraft();
-      renderFoodAll();
-      renderDaySummary();
-      updateTopTotals();
-      setStatus("Добавлено в сводку дня.");
-      return;
-    }
-
-    const delMeal = ev.target.closest("[data-del-meal-entry]");
-    if(delMeal){
-      const entryId = delMeal.getAttribute("data-del-meal-entry");
-      deleteMealEntry(entryId);
-      await saveDraft();
-      renderFoodAll();
-      renderDaySummary();
-      updateTopTotals();
-      return;
-    }
-
-    const addAct = ev.target.closest("[data-act-add]");
-    if(addAct){
-      const id = addAct.getAttribute("data-act-add");
-      const a = activities.find(x => x.id === id);
-      const kph = Number(a?.kcalPerHour || 0);
-
-      const kcalEl = document.querySelector(`#activities [data-act-kcal="${CSS.escape(id)}"]`);
-      const minEl = document.querySelector(`#activities [data-act-min="${CSS.escape(id)}"]`);
-
-      let minutes = Math.round(Number(minEl?.value || 0));
-      if(!minutes){
-        const kcal = Math.round(Number(kcalEl?.value || 0));
-        minutes = (kcal && kph) ? Math.round(kcal * 60 / kph) : 0;
-      }
-      if(!minutes || minutes <= 0){
-        setStatus("Введите ккал за сессию или минуты (>0)." );
-        return;
-      }
-
-      todayActivityEntries.push({id, minutes, activitySnapshot: buildActivitySnapshot(activities.find(x => x.id === id)), createdAt: new Date().toISOString()});
-      if(kcalEl) kcalEl.value = "";
-      if(minEl) minEl.value = "";
-      await saveDraft();
-      renderActivities();
-      renderDaySummary();
-      updateTopTotals();
-      return;
-    }
-
-    const delAct = ev.target.closest("[data-del-act-idx]");
-    if(delAct){
-      const idx = Number(delAct.getAttribute("data-del-act-idx"));
-      todayActivityEntries.splice(idx, 1);
-      await saveDraft();
-      renderActivities();
-      renderDaySummary();
-      updateTopTotals();
-      return;
-    }
-  });
-}
-function wireActivityInputs(){
-  const activitiesTab = document.getElementById("activities");
-  if(!activitiesTab) return;
-
-  activitiesTab.addEventListener("keydown", (ev) => {
-    const inp = ev.target?.closest?.("[data-act-min],[data-act-kcal]");
-    if(!inp) return;
-
-    const key = ev.key;
-    if(key !== "Enter" && key !== "Go" && key !== "Done" && ev.keyCode !== 13) return;
-
-    ev.preventDefault();
-    ev.stopPropagation();
-    ev.stopImmediatePropagation?.();
-
-    const id = inp.getAttribute(inp.hasAttribute("data-act-min") ? "data-act-min" : "data-act-kcal");
-    const btn = activitiesTab.querySelector(`[data-act-add="${CSS.escape(id)}"]`);
-    if(btn) btn.click();
-  }, true);
-
-  activitiesTab.addEventListener("input", (ev) => {
-    const minInp = ev.target.closest("[data-act-min]");
-    const kcalInp = ev.target.closest("[data-act-kcal]");
-    if(!minInp && !kcalInp) return;
-
-    const id = (minInp || kcalInp).getAttribute(minInp ? "data-act-min" : "data-act-kcal");
-    const a = activities.find(x => x.id === id);
-    const kph = Number(a?.kcalPerHour || 0);
-    if(!kph) return;
-
-    const minEl = activitiesTab.querySelector(`[data-act-min="${CSS.escape(id)}"]`);
-    const kcalEl = activitiesTab.querySelector(`[data-act-kcal="${CSS.escape(id)}"]`);
-
-    if(minInp){
-      const minutes = Number(minEl.value || 0);
-      kcalEl.value = minutes ? String(Math.round(kph * minutes / 60)) : "";
-    } else {
-      const kcal = Number(kcalEl.value || 0);
-      minEl.value = kcal ? String(Math.round(kcal * 60 / kph)) : "";
-    }
-  });
-}
-
-async function wireActions(){
-  document.getElementById("btnSaveSettings").addEventListener("click", saveSettings);
-
-  document.getElementById("btnSingleImport").addEventListener("click", async () => {
-    const txt = String(document.getElementById("singleImportText").value || "").trim();
-    if(!txt){ setStatus("Вставь текст импорта."); return; }
-
-    let obj = null;
-    try{ obj = JSON.parse(txt); } catch(e){ setStatus("Не похоже на JSON."); return; }
-
-    const data = obj?.data ?? obj;
-    const t = obj?.t || (data?.kcalPerHour !== undefined ? "activity" : (data?.calories !== undefined ? "meal" : null));
-
-    if(t === "meal"){
-      const base = {...data}; delete base.id; const id = uid("m"); await txPut("meals", {...base, id, updatedAt: new Date().toISOString()});
-      meals = await txGetAll("meals");
-      renderFoodAll();
-      renderDaySummary();
-      updateTopTotals();
-      setStatus("Блюдо импортировано.");
-      return;
-    }
-    if(t === "activity"){
-      const baseA = {...data}; delete baseA.id; const idA = uid("a"); await txPut("activities", {...baseA, id: idA, updatedAt: new Date().toISOString()});
-      activities = await txGetAll("activities");
-      renderActivities();
-      renderDaySummary();
-      updateTopTotals();
-      setStatus("Активность импортирована.");
-      return;
-    }
-
-    setStatus("Не удалось определить тип (meal/activity).");
-  });
-  document.getElementById("btnSaveShopping").addEventListener("click", saveShopping);
-  document.getElementById("btnPersist").addEventListener("click", requestPersist);
-
-  document.getElementById("btnExport").addEventListener("click", exportBackupNow);
-  document.getElementById("btnImport").addEventListener("click", async () => {
-    const f = document.getElementById("importFile").files?.[0];
-    if(!f){ setStatus("Выбери backup.json."); return; }
-    await importBackup(f);
-    await loadAll();
-    setStatus("Импорт завершён.");
-  });
-
-  document.getElementById("btnResetDay").addEventListener("click", async () => {
-    todayMealEntries = [];
-    todayActivityEntries = [];
-    document.getElementById("notes").value = "";
-    document.getElementById("steps").value = "";
-    await saveDraft();
-    renderFoodAll();
-    renderActivities();
-    updateTopTotals();
-    setStatus("Сброшено.");
-  });
-
-  document.getElementById("btnSaveDay").addEventListener("click", async () => {
-    const date = viewDateISO || await getAppDateISO();
-
-    const eat = calcEatKcal();
-    const burnExercise = calcBurnKcalExercise();
-    const basal = calcBasalKcalPerDay();
-    const burnTotal = burnExercise + basal;
-    const goal = Number(window.goalKcal || 0);
-    const limit = Math.round(basal + burnExercise + goal);
-    const remaining = Math.round(limit - eat);
-
-    // Protein + water snapshot for log
-    const proteinEatG = calcEatProteinG();
-    const proteinTargetG = calcProteinTargetG();
-    const fluidFromMealsMl = calcFluidFromMealsMl();
-    const waterGoalMl = calcWaterGoalMl();
-    const waterMlExtra = Math.round(Number(todayWaterMl || 0));
-    const waterMl = Math.round(waterMlExtra + fluidFromMealsMl);
-
-    await txPut("logs", {
-      date,
-      weight: document.getElementById("weight").value,
-      steps: document.getElementById("steps").value,
-      mealEntries: normalizeMealEntries(Array.from(todayMealEntries || [])),
-      activityEntries: normalizeActivityEntries(Array.from(todayActivityEntries || [])),
-      eatCalories: eat,
-      burnExerciseCalories: burnExercise,
-      basalCalories: basal,
-      burnCalories: burnTotal,
-      netCalories: eat - burnTotal,
-      goalKcal: goal,
-      limitCalories: limit,
-      remainingCalories: remaining,
-      proteinEatG,
-      proteinTargetG,
-      waterMl,
-      waterGoalMl,
-      waterMlExtra,
-      fluidFromMealsMl,
-      notes: document.getElementById("notes").value,
-      updatedAt: new Date().toISOString()
-    });
-
-    // В обычном режиме: сохранить запись дня и скачать backup, но НЕ очищать текущий день.
-    await exportBackupNow();
-    await renderLogs();
-
-    const dbg = await metaGet("debug.enabled");
-    if(dbg){
-      await advanceAppDateIfDebug();
-      viewDateISO = await getAppDateISO();
-      await refreshDateUI();
-
-      todayMealEntries = [];
-      todayActivityEntries = [];
-      todayWaterMl = 0;
-      document.getElementById("notes").value = "";
-      document.getElementById("steps").value = "";
-      await saveDraft();
-      renderFoodAll();
-      renderActivities();
-      renderDaySummary();
-      updateTopTotals();
-      setStatus("Сохранено. debug: дата +1.");
-      return;
-    }
-
-    await refreshDateUI();
-    await saveDraft();
-    updateTopTotals();
-    setStatus("Сохранено.");
-  });
-
-  document.getElementById("btnResetJournal").addEventListener("click", async () => {
-    if(!confirm("Стереть журнал полностью?")) return;
-    if(!confirm("Точно? Это необратимо.")) return;
-    await txClear("logs");
-    await renderLogs();
-    setStatus("Журнал очищен.");
-  });
-
-  const dbgEnabled = document.getElementById("dbgEnabled");
-  dbgEnabled.addEventListener("change", async () => {
-    await metaSet("debug.enabled", !!dbgEnabled.checked);
-    if(dbgEnabled.checked){
-      const cur = await metaGet("debug.dateISO");
-      if(!cur) await metaSet("debug.dateISO", isoFromDate(new Date()));
-    }
-    await refreshDateUI();
-  });
-  document.getElementById("dbgReset").addEventListener("click", async () => {
-    await metaSet("debug.dateISO", isoFromDate(new Date()));
-    await refreshDateUI();
-    setStatus("Debug date reset.");
-  });
-
-  document.getElementById("netTile").addEventListener("click", (ev) => {
-    ev.preventDefault();
-    cycleNettoMode();
-  });
-
-  // stop scan when leave barcode tab
-  document.querySelectorAll(".tabbtn").forEach(btn => {
-    btn.addEventListener("click", async () => {
-      if(btn.dataset.tab !== "barcode") await stopScan();
-    });
-  });
-}
-
-async function loadAll(){
-  const m0 = await txGetAll("meals");
-  if(!m0.length) await txBulkPut("meals", seedMealsIfEmpty(m0));
-  const a0 = await txGetAll("activities");
-  if(!a0.length) await txBulkPut("activities", seedActivitiesIfEmpty(a0));
-
-  meals = await txGetAll("meals");
-  activities = await txGetAll("activities");
-
-  await loadSettings();
-  await loadShopping();
-  await refreshDateUI();
-  await migrateLegacyDraftOnce();
-  await autoSaveDraftIfDateChanged();
-  await loadDraft();
-
-  renderFoodAll();
-  renderDaySummary();
-  renderActivities();
-  await renderLogs();
-  updateTopTotals();
-}
-
-function wireTabsAndEditors(){
-  wireTabs();
-  wireAddButtons();
-  wireGlobalClicks();
-  wireActivityInputs();
-  wireModalButtons();
-  wireDraftInputs();
-  wireBarcodeSearch();
-
-  installLongPress(document.body, "[data-meal-card]", el => el.getAttribute("data-meal-card"), openEditMealModal);
-  installLongPress(document.getElementById("activities"), "[data-act-card]", el => el.getAttribute("data-act-card"), openEditActivityModal);
-
-  // Date picker: long press on date in header
-  const dp = document.getElementById("datePicker");
-  if(dp){
-    dp.addEventListener("change", async () => {
-      if(!dp.value) return;
-      await applyViewDate(dp.value);
-    });
-  }
-  const uiDate = document.getElementById("uiDate");
-  if(uiDate){
-    let t = null;
-    const start = () => {
-      if(t) clearTimeout(t);
-      t = setTimeout(() => { showDatePicker(); }, 650);
-    };
-    const cancel = () => { if(t) clearTimeout(t); t = null; };
-    uiDate.addEventListener("pointerdown", start);
-    uiDate.addEventListener("pointerup", cancel);
-    uiDate.addEventListener("pointercancel", cancel);
-    uiDate.addEventListener("pointerleave", cancel);
-    uiDate.addEventListener("contextmenu", (e) => { e.preventDefault(); showDatePicker(); });
-  }
-
-}
-
-async function main(){
-  wireTabsAndEditors();
-  await wireActions();
-  await loadAll();
-  setStatus("Готово.");
-}
-main();
-</script>
+      <div class="actions">
+        <button class="btn secondary" id="closeImportBtn">Отмена</button>
+        <button class="btn hidden" id="btnExecuteImport">Импортировать все</button>
+      </div>
+    </div>
+  </div>
+
+  <nav class="bottom-nav">
+    <button class="nav-item active" data-nav="day">
+      <span class="nav-icon">🏠</span>
+      <span class="nav-label">Главная</span>
+    </button>
+    <button class="nav-item" data-nav="activities">
+      <span class="nav-icon">🏃</span>
+      <span class="nav-label">Активность</span>
+    </button>
+    <button class="nav-item" data-nav="food">
+      <span class="nav-icon">🍎</span>
+      <span class="nav-label">Еда</span>
+    </button>
+    <button class="nav-item" data-nav="more">
+      <span class="nav-icon">☰</span>
+      <span class="nav-label">Меню</span>
+    </button>
+  </nav>
+
+  <div id="moreMenu" class="modalBack" style="z-index: 2000;">
+    <div class="modal">
+      <h3>Меню</h3>
+      <div class="grid2">
+        <button class="btn secondary" data-more-link="barcode">Скан</button>
+        <button class="btn secondary" data-more-link="log">Лог</button>
+        <button class="btn secondary" data-more-link="data">Данные</button>
+        <button class="btn secondary" data-more-link="settings">Настройки</button>
+      </div>
+      <div style="margin-top: 20px; text-align: center;">
+        <button class="btn" id="closeMoreMenu">Закрыть</button>
+      </div>
+    </div>
+  </div>
+
+  <button id="fab" class="fab" style="display:none" title="Добавить">+</button>
+
+  <script type="module" src="script.js"></script>
 </body>
 </html>
