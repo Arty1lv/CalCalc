@@ -1,0 +1,592 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Food Plan MVP v17.20</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="master-header" id="masterHeader">
+    <div class="top" id="mainDashboard">
+      <!-- Top Section: Persistent Title & Progress -->
+      <div class="dash-top">
+        <div class="header-main-row">
+          <div id="appTitle" style="font-size:18px;font-weight:900">Food Plan</div>
+          <div class="mutedOnBlue clickable" id="headerDateContainer">
+            <span id="uiDate"></span> <span id="uiDebugTag"></span>
+            <input id="datePicker" type="date" class="hidden">
+          </div>
+        </div>
+        <div class="fullBar"><div id="limitBar"></div></div>
+      </div>
+
+      <!-- Middle Section: Collapsible Metrics -->
+      <div class="dash-middle" id="dashMiddle">
+        <div class="row" id="mainPillsRow" style="margin-top:12px">
+          <div class="pill">
+            <div class="muted">Съедено</div>
+            <div class="big" id="todayEat">0</div>
+            <div class="muted">ккал</div>
+          </div>
+          <div class="pill">
+            <div class="muted">Сожжено (упр.)</div>
+            <div class="big" id="todayBurn">0</div>
+            <div class="muted">ккал</div>
+            <div class="muted" id="bmrInfo" style="margin-top:6px"></div>
+          </div>
+          <div class="pill clickable" id="netTile" title="Нажми для смены режима">
+            <div class="muted" id="nettoTitle">Нетто</div>
+            <div class="big" id="todayNet">0</div>
+            <div class="muted" id="nettoLabel"></div>
+          </div>
+          <div class="pill" id="trackerTile" style="min-width:200px">
+            <div class="muted">Белок</div>
+            <div class="big" id="uiProtein">0/0 г</div>
+            <div class="muted" style="margin-top:6px">Вода</div>
+            <div class="big" id="uiWater">0/2000 мл</div>
+          </div>
+        </div>
+
+      <div class="pill" id="dashFieldsRow" style="margin-top:12px; display:flex; padding: 10px;">
+        <div style="display:flex; gap:10px; justify-content: space-around; align-items: center; width: 100%;">
+          <div class="dash-field-input-wrapper">
+            <span class="dash-field-icon">👣</span>
+            <input id="dashSteps" class="dash-field-input" type="number" placeholder="Шаги" title="Шаги за день"/>
+          </div>
+          <div class="dash-field-input-wrapper">
+            <span class="dash-field-icon">⚖️</span>
+            <input id="dashWeight" class="dash-field-input" type="number" step="0.1" placeholder="Вес" title="Ваш вес"/>
+          </div>
+        </div>
+      </div>
+      </div>
+
+      <!-- Bottom Section: Persistent Status -->
+      <div class="dash-bottom">
+        <div class="status" id="status"></div>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <button class="tabbtn active" data-tab="day">Главная</button>
+      <button class="tabbtn" data-tab="activities">Активность</button>
+      <button class="tabbtn" data-tab="food">Еда</button>
+      <button class="tabbtn" data-tab="barcode">Скан</button>
+      <button class="tabbtn" data-tab="log">Лог</button>
+      <button class="tabbtn" data-tab="data">Данные</button>
+      <button class="tabbtn" data-tab="settings">Настройки</button>
+    </div>
+    
+    <div id="foodStickyControls" class="sticky-tab-controls" style="display:none">
+      <div class="sub-tabs">
+        <button class="tabbtn active food-sub-tab" data-food-type="recipe">Блюда</button>
+        <button class="tabbtn food-sub-tab" data-food-type="snack">Перекусы</button>
+        <button class="tabbtn food-sub-tab" data-food-type="liquid">Напитки</button>
+        <button class="tabbtn food-sub-tab" data-food-type="ingredient">Ингредиенты</button>
+      </div>
+      <div id="foodSearchContainer"></div>
+    </div>
+    <div id="activitiesStickyControls" class="sticky-tab-controls" style="display:none">
+      <div id="activitiesSearchContainer"></div>
+    </div>
+  </div>
+
+
+
+  <div id="day" class="tab active">
+    <div class="tabHeader">
+      <div class="tabTitle">Сводка дня</div>
+      <div class="todayToggleRow">
+        <div class="muted">Долгое нажатие на дату в шапке — выбор дня.</div>
+      </div>
+    </div>
+
+    <div class="grid2 one" id="dayGrid">
+      <div class="todayBox">
+        <div style="font-weight:900">Завтрак</div>
+        <div id="dayBreakfastList" style="margin-top:10px"></div>
+      </div>
+      <div class="todayBox">
+        <div style="font-weight:900">Обед</div>
+        <div id="dayLunchList" style="margin-top:10px"></div>
+      </div>
+      <div class="todayBox">
+        <div style="font-weight:900">Ужин</div>
+        <div id="dayDinnerList" style="margin-top:10px"></div>
+      </div>
+      <div class="todayBox">
+        <div style="font-weight:900">Вкусняшки</div>
+        <div id="dayTreatList" style="margin-top:10px"></div>
+      </div>
+      <div class="todayBox">
+        <div style="font-weight:900">Перекусы</div>
+        <div id="daySnacksList" style="margin-top:10px"></div>
+      </div>
+      <div class="todayBox">
+        <div style="font-weight:900">Занятия</div>
+        <div id="dayActivitiesList" style="margin-top:10px"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="food" class="tab">
+    <div class="grid2 one" id="foodGrid">
+      <div><div id="foodList"></div></div>
+    </div>
+  </div>
+
+  <div id="activities" class="tab">
+    <div class="grid2 one" id="activitiesGrid">
+      <div>
+        <div id="activityList"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="barcode" class="tab">
+    <div class="tabHeader">
+      <div class="tabTitle">Штрихкод</div>
+      <div class="todayToggleRow">
+        <button class="btn secondary" id="btnBarcodePaste">Вставить</button>
+        <button class="btn secondary" id="btnScanStart">Сканировать</button>
+        <button class="btn secondary hidden" id="btnScanStop">Стоп</button>
+        <button class="btn" id="btnBarcodeSearch">Найти</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="muted">Штрихкод</div>
+      <input id="barcodeInput" inputmode="numeric" placeholder="Напр. 3017624010701"/>
+      <div class="muted" style="margin-top:8px">Поиск идёт в Open Food Facts.</div>
+    </div>
+
+    <div class="card hidden" id="scanCard">
+      <div style="font-weight:900">Сканирование</div>
+      <div class="muted" style="margin-top:6px">Нужно HTTPS и действие пользователя (кнопка “Сканировать”).</div>
+      <div class="scanOverlay" style="margin-top:10px">
+        <video id="scanVideo" class="scanVideo" autoplay playsinline muted></video>
+        <div class="scanHint" id="scanHint">Ожидание…</div>
+      </div>
+      <div class="muted" style="margin-top:8px">Используется ZXing (JS-декодер), работает там, где BarcodeDetector недоступен.</div>
+    </div>
+
+    <div id="barcodeResult"></div>
+  </div>
+
+  <div id="log" class="tab">
+    <div class="grid2">
+      <div class="card">
+        <div style="font-weight:900">Заметки</div>
+        <textarea id="notes" placeholder=""></textarea>
+        <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px">
+          <button class="btn" id="btnSaveDay">Сохранить день + backup</button>
+          <button class="btn danger" id="btnResetDay">Сбросить</button>
+        </div>
+        <div class="muted" style="margin-top:8px">При сохранении создаётся backup.json.</div>
+      </div>
+
+      <div class="card">
+        <div style="font-weight:900">Последние дни</div>
+        <div id="logList" class="muted"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="settings" class="tab">
+
+    
+
+
+    <div class="card">
+      <div style="font-weight:900">Настройки</div>
+      <div class="muted" style="margin-top:6px">BMR</div>
+
+      <div class="grid2" style="margin-top:10px">
+          <div>
+            <div class="muted">Вес (кг)</div>
+            <input id="weight" type="number" step="0.1" placeholder="55.0">
+            <div class="muted" style="margin-top:6px">Нужен для BMR и цели белка.</div>
+          </div>
+
+        <div>
+          <div class="muted">Рост</div>
+          <input id="setHeight" type="number" min="80" max="250" step="1" placeholder="152"/>
+        </div>
+        <div>
+          <div class="muted">Возраст</div>
+          <input id="setAge" type="number" min="12" max="90" step="1" placeholder="30"/>
+        </div>
+      </div>
+
+      <div style="margin-top:10px">
+        <div class="muted">Пол</div>
+        <select id="setSex">
+          <option value="female">Ж</option>
+          <option value="male">М</option>
+        </select>
+      </div>
+
+      <div style="margin-top:10px">
+        <div class="muted">Множитель BMR</div>
+        <input id="bmrMultiplier" type="number" min="1" max="2" step="0.05" placeholder="1.20"/>
+      </div>
+
+      <div style="margin-top:10px">
+        <div class="muted">Цель (ккал/день)</div>
+        <input id="goalKcal" type="number" step="10" placeholder="-400"/>
+        <div class="muted" style="margin-top:6px">Напр. -400 = дефицит 400 ккал.</div>
+      </div>
+
+      
+        <div class="row2" style="margin-top:10px">
+          <div>
+            <div class="muted">Белок (г/кг)</div>
+            <input id="proteinPerKg" type="number" min="0.2" max="3" step="0.01" placeholder="0.83">
+          </div>
+          <div>
+            <div class="muted">Вода (мл/день)</div>
+            <input id="waterGoalMl" type="number" min="0" step="50" placeholder="2000">
+          </div>
+        </div>
+        <div class="muted" style="margin-top:6px">Цель белка: вес × г/кг.</div>
+<div style="margin-top:10px">
+        <div class="muted">Режим нетто</div>
+        <select id="nettoMode">
+          <option value="nettonobmr">Съедено − спорт</option>
+          <option value="nettowithbmr">Съедено − спорт − BMR</option>
+          <option value="consumedlimit">Съедено / лимит</option>
+          <option value="remaining">Осталось до лимита</option>
+        </select>
+      </div>
+
+      <div style="margin-top:10px">
+        <div class="muted">Название приложения</div>
+        <input id="setAppTitle" placeholder="" maxlength="50"/>
+      </div>
+
+      <div class="grid2" style="margin-top:10px">
+        <div>
+          <div class="muted">Цвет шапки (сегодня)</div>
+          <input id="topColorToday" type="color" value="#2f6fed"/>
+        </div>
+        <div>
+          <div class="muted">Цвет шапки (прошлые дни)</div>
+          <input id="topColorPast" type="color" value="#ec4899"/>
+        </div>
+      </div>
+
+      <label class="check" style="margin-top:10px"><input id="darkTheme" type="checkbox"> <span>Тёмная тема</span></label>
+
+
+      <div class="muted" style="margin-top:10px">BMR считается по Mifflin-St Jeor: 10W + 6.25H − 5A + S.</div>
+
+      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px">
+        <button class="btn secondary" id="btnSaveSettings">Сохранить настройки</button>
+        <button class="btn secondary" id="btnPersist">Persist storage</button>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:10px">
+      <label style="display:flex; gap:10px; align-items:center">
+        <input type="checkbox" id="autoSaveOnNewDay" style="width:auto; transform:scale(1.2)"/>
+        <span>Автосохранять день при смене даты</span>
+      </label>
+      <div class="muted" style="margin-top:8px">Если включено — приложение сохранит вчерашний день автоматически.</div>
+    </div>
+
+    <div class="card" style="margin-top:10px">
+      <label style="display:flex; gap:10px; align-items:center">
+        <input type="checkbox" id="favoritesEnabled" style="width:auto; transform:scale(1.2)"/>
+        <span>Избранное</span>
+      </label>
+      <div class="muted" style="margin-top:8px">Можно отмечать блюда/занятия звёздочкой.</div>
+    </div>
+
+    <div class="card" style="margin-top:10px">
+      <div style="font-weight:900">Debug</div>
+      <label style="display:flex; gap:10px; align-items:center; margin-top:10px">
+        <input type="checkbox" id="dbgEnabled" style="width:auto; transform:scale(1.2)"/>
+        <span>Debug date +1</span>
+      </label>
+      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px">
+        <button class="btn secondary" id="dbgReset">Reset date</button>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:10px; border:2px solid #dc2626; background:#fef2f2">
+      <div style="font-weight:900; color:#dc2626">Опасная зона</div>
+      <div class="muted" style="margin-top:6px">Сбросит весь журнал (логи) — блюда/активности останутся.</div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px">
+        <button class="btn danger" id="btnResetJournal" style="padding:12px 20px; font-weight:900">Сбросить журнал</button>
+      </div>
+      <div class="muted" style="margin-top:12px">Полный сброс — удалит ВСЁ (блюда, активности, настройки, логи).</div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px">
+        <button class="btn danger" id="btnFactoryReset" style="padding:8px 16px; font-size:12px">Factory Reset (Full Data Wipe)</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="data" class="tab">
+    <div class="grid2">
+      <div class="card">
+        <div style="font-weight:900">Импорт backup.json</div>
+        <input type="file" id="importFile" accept="application/json"/>
+        <div class="muted" style="margin-top:8px">meals/activities/logs/shopping/meta.</div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px">
+          <button class="btn secondary" id="btnImport">Импорт</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div style="font-weight:900">Импорт рецепта/бандла</div>
+        <div class="muted">Импорт через текст или QR-код.</div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px">
+          <button class="btn secondary" id="btnImportBundle">Импорт бандла</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div style="font-weight:900">Экспорт</div>
+        <div class="muted">Скачает backup.json.</div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px">
+          <button class="btn secondary" id="btnExport">Экспорт backup</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div style="font-weight:900">Список покупок</div>
+      <textarea id="shopping" placeholder="12 яиц&#10;300 г курицы&#10;..."></textarea>
+      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px">
+        <button class="btn secondary" id="btnSaveShopping">Сохранить</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modalBack" id="portionModalBack">
+    <div class="modal" id="portionModal">
+      <h3 id="portionModalTitle">Подтвердите порцию</h3>
+      <div id="portionModalBody">
+        <div class="card">
+          <div style="font-weight:900" id="portionItemName"></div>
+          <div style="display:flex; align-items:center; gap:10px; margin-top:10px">
+            <div style="flex:1">
+              <div class="muted">Кол-во порций</div>
+              <input id="portionMultiplier" type="number" step="0.1" value="1" inputmode="decimal" />
+            </div>
+            <div style="flex:1">
+              <div class="muted">Вес (<span id="portionUnit">г</span>)</div>
+              <input id="portionAmount" type="number" step="1" inputmode="numeric" />
+            </div>
+          </div>
+          <div class="muted" style="margin-top:10px">
+            Итого: <span id="portionKcal" class="kcal">0</span> ккал
+          </div>
+          <div class="muted" style="margin-top:4px">
+            Белки: <span id="portionProtein">0</span> г, 
+            Жидкость: <span id="portionFluid">0</span> мл
+          </div>
+          
+          <div id="portionIngredientsToggleWrapper" style="margin-top:10px; display:none">
+            <button class="btn secondary tiny" style="width:100%" id="btnTogglePortionIngredients">Показать ингредиенты</button>
+          </div>
+          <div id="portionIngredientsList" style="margin-top:10px; display:none"></div>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn secondary" id="cancelPortionBtn">Отмена</button>
+        <button class="btn" id="confirmPortionBtn">Добавить</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modalBack" id="modalBack">
+    <div class="modal">
+	  <div style="margin-bottom:5%">
+      <h3 id="modalTitle"></h3>
+      <div id="modalBody"></div>
+      <div class="actions">
+        <button class="btn danger" id="modalDelete" style="display:none;margin-right:auto">Удалить</button>
+		<button class="btn secondary" id="modalExport" style="display:none;">Экспорт</button>
+        <button class="btn secondary" id="modalCancel">Отмена</button>
+		
+        <button class="btn" id="modalOk">OK</button>
+      </div>
+    </div>
+    </div>
+  </div>
+
+  <div class="modalBack" id="secondaryModalBack" style="z-index: 1200;">
+    <div class="modal">
+      <h3 id="secondaryModalTitle"></h3>
+      <div id="secondaryModalBody"></div>
+      <div class="actions">
+        <button class="btn secondary" id="secondaryModalCancel">Отмена</button>
+        <button class="btn" id="secondaryModalOk">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modalBack" id="recipeBuilderModalBack">
+    <div class="modal" id="recipeBuilderModal">
+      <h3>Конструктор рецепта</h3>
+      <div id="recipeBuilderBody">
+        <div class="card">
+          <div class="muted">Название рецепта</div>
+          <input id="recipeName" placeholder="Напр. Курица с рисом" />
+          <div class="muted" style="margin-top:10px">Короткое описание</div>
+          <input id="recipeShort" placeholder="Напр. На 2 порции" />
+        </div>
+        
+        <button class="btn secondary" style="width:100%; margin-top:10px" id="btnAddIngredient">+ Добавить ингредиент</button>
+        
+        <div id="recipeIngredientList"></div>
+        
+        <div class="card" style="margin-top:10px">
+          <div class="muted">Инструкции по приготовлению</div>
+          <textarea id="recipePrep" placeholder="Шаг 1, Шаг 2..."></textarea>
+        </div>
+
+        <div class="card" style="margin-top:10px">
+          <div style="font-weight:900">Итого (на весь рецепт):</div>
+          <div class="kcal" id="recipeTotalKcal">0 ккал</div>
+          <div class="muted">
+            Белки: <span id="recipeTotalProtein">0</span> г, 
+            Жидкость: <span id="recipeTotalFluid">0</span> мл
+          </div>
+          <div class="grid2" style="margin-top:10px; border-top:1px solid #eee; padding-top:10px">
+            <div>
+              <div class="muted">Сырой вес (г)</div>
+              <div id="recipeRawWeight" style="font-weight:900; margin-top:4px">0</div>
+            </div>
+            <div>
+              <div class="muted">Готовый вес (г) <span id="recipeWeightDiff" style="font-size:11px; font-weight:normal"></span></div>
+              <input type="number" id="recipeCookedWeight" value="0" style="margin-top:4px" />
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn danger" id="btnRecipeDelete" style="display:none; margin-right:auto">Удалить</button>
+        <button class="btn secondary" id="btnRecipeShare" style="display:none">Поделиться</button>
+        <button class="btn secondary" id="btnRecipeCancel">Отмена</button>
+        <button class="btn" id="btnRecipeSave">Сохранить</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modalBack" id="classificationModalBack">
+    <div class="modal" id="classificationModal">
+      <h3>Выберите категорию</h3>
+      <div id="classificationBody" style="display:flex; flex-direction:column; gap:10px">
+        <button class="btn secondary btn-classify" data-classify="breakfast" style="height:60px; font-size:18px">Завтрак</button>
+        <button class="btn secondary btn-classify" data-classify="lunch" style="height:60px; font-size:18px">Обед</button>
+        <button class="btn secondary btn-classify" data-classify="dinner" style="height:60px; font-size:18px">Ужин</button>
+        <button class="btn secondary btn-classify" data-classify="snack" style="height:60px; font-size:18px">Перекус</button>
+        <button class="btn secondary btn-classify" data-classify="treat" style="height:60px; font-size:18px">Вкусняшки</button>
+      </div>
+      <div class="actions">
+        <button class="btn secondary" id="cancelClassifyBtn">Отмена</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modalBack" id="shareModalBack" style="z-index: 1300;">
+    <div class="modal" id="shareModal">
+      <h3>Поделиться</h3>
+      <div id="shareModalBody">
+        <div class="card" style="text-align:center">
+          <div id="shareItemName" style="font-weight:900; margin-bottom:10px"></div>
+                <div id="qrContainer" style="margin:20px 0; display:flex; justify-content:center; align-items:center; min-height:200px">
+                  <canvas id="shareQR" style="max-width:100%; height:auto"></canvas>
+                  <div id="qrError" class="muted hidden" style="padding:40px 20px; border:2px dashed #ccc; width:100%; text-align:center">
+                    Рецепт слишком большой для QR-кода.<br>Используйте копирование текста.
+                  </div>
+                </div>          <button class="btn secondary" id="btnCopyShareText" style="width:100%">Копировать текст</button>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn" id="closeShareBtn">Закрыть</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modalBack" id="importModalBack" style="z-index: 1300;">
+    <div class="modal" id="importModal">
+      <h3>Импорт данных</h3>
+      <div id="importModalBody">
+        <!-- Step 1: Input -->
+        <div id="importStepInput">
+          <div class="card">
+            <div class="muted">Вставьте текст или отсканируйте код</div>
+            <textarea id="importPasteText" style="margin-top:10px; height:100px" placeholder='{"v":2, ...}'></textarea>
+            <div style="display:flex; gap:10px; margin-top:10px">
+              <button class="btn secondary" id="btnImportClipboard" style="flex:1">Из буфера</button>
+              <button class="btn secondary" id="btnImportScan" style="flex:1">Сканировать</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 2: Scanner -->
+        <div id="importStepScanner" class="hidden">
+          <div class="card">
+            <div class="scanOverlay">
+              <video id="importScanVideo" class="scanVideo" autoplay playsinline muted></video>
+              <div class="scanHint" id="importScanHint">Загрузка…</div>
+            </div>
+            <button class="btn danger" id="btnStopImportScan" style="width:100%; margin-top:10px">Отмена</button>
+          </div>
+        </div>
+
+        <!-- Step 3: Review & Conflict Resolution -->
+        <div id="importStepReview" class="hidden">
+          <div id="importReviewList"></div>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn secondary" id="closeImportBtn">Отмена</button>
+        <button class="btn hidden" id="btnExecuteImport">Импортировать все</button>
+      </div>
+    </div>
+  </div>
+
+  <nav class="bottom-nav">
+    <button class="nav-item active" data-nav="day">
+      <span class="nav-icon">🏠</span>
+      <span class="nav-label">Главная</span>
+    </button>
+    <button class="nav-item" data-nav="activities">
+      <span class="nav-icon">🏃</span>
+      <span class="nav-label">Активность</span>
+    </button>
+    <button class="nav-item" data-nav="food">
+      <span class="nav-icon">🍎</span>
+      <span class="nav-label">Еда</span>
+    </button>
+    <button class="nav-item" data-nav="more">
+      <span class="nav-icon">☰</span>
+      <span class="nav-label">Меню</span>
+    </button>
+  </nav>
+
+  <div id="moreMenu" class="modalBack" style="z-index: 2000;">
+    <div class="modal">
+      <h3>Меню</h3>
+      <div class="grid2">
+        <button class="btn secondary" data-more-link="barcode">Скан</button>
+        <button class="btn secondary" data-more-link="log">Лог</button>
+        <button class="btn secondary" data-more-link="data">Данные</button>
+        <button class="btn secondary" data-more-link="settings">Настройки</button>
+      </div>
+      <div style="margin-top: 20px; text-align: center;">
+        <button class="btn" id="closeMoreMenu">Закрыть</button>
+      </div>
+    </div>
+  </div>
+
+  <button id="fab" class="fab" style="display:none" title="Добавить">+</button>
+
+  <script type="module" src="script.js"></script>
+</body>
+</html>
