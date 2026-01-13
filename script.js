@@ -12,7 +12,7 @@ window.waterGoalMl = 2000;
 window.nettoMode = "nettonobmr";
 window.autoSaveOnNewDay = true;
 
-let currentFoodType = "recipe";
+let currentFoodType = "ingredient";
 window.currentFoodType = currentFoodType;
 let pendingTabSwitch = null;
 
@@ -154,6 +154,13 @@ function applyTheme(){
   }
 
   applyHeaderPalette();
+}
+
+function updateDynamicLabels() {
+  const snackBtn = document.querySelector('.food-sub-tab[data-food-type="snack"]');
+  if (snackBtn) {
+    snackBtn.textContent = window.labelSnackBank || "Вкусняшки";
+  }
 }
 
 function clamp01(x){ return Math.max(0, Math.min(1, x)); }
@@ -1229,6 +1236,10 @@ function applyNettoMode(eat, burnExercise, basal, limit){
   document.getElementById("nettoLabel").textContent = "ккал";
 }
 function updateTopTotals(){
+  const meals = window.todayMealEntries || [];
+  const acts = window.todayActivityEntries || [];
+  const sets = window.settings || {};
+  
   const eat = calcEatKcal();
   const burnExercise = calcBurnKcalExercise();
   const basal = calcBasalKcalPerDay();
@@ -1388,7 +1399,6 @@ async function autoSaveDraftIfDateChanged(){
         if(draft){
           console.log(`Auto-saving log for ${lastOpened}`);
           await saveDayLogFromDraft(draft, true);
-          await renderLogs();
         }
       }
     }
@@ -1711,6 +1721,7 @@ function syncUI(state) {
   document.getElementById("portionModalBack").style.display = activeModals.includes("portionModal") ? "block" : "none";
   document.getElementById("recipeBuilderModalBack").style.display = activeModals.includes("recipeBuilder") ? "block" : "none";
   document.getElementById("classificationModalBack").style.display = activeModals.includes("classification") ? "block" : "none";
+  if(!activeModals.includes("classification")) currentClassifyCallback = null;
   document.getElementById("shareModalBack").style.display = activeModals.includes("shareModalBack") ? "block" : "none";
   document.getElementById("importModalBack").style.display = activeModals.includes("importModalBack") ? "block" : "none";
   const menu = document.getElementById("moreMenu");
@@ -1828,8 +1839,6 @@ function switchTab(tabId) {
   
   // Reset scroll and dashboard state on tab switch
   window.scrollTo(0, 0);
-  document.querySelectorAll(".tab").forEach(t => t.style.transform = "translate3d(0,0,0)");
-  if(window.measureDash) window.measureDash();
 }
 window.switchTab = switchTab;
 
@@ -1977,7 +1986,7 @@ function mealModalBody(meal){
         <div class="muted">Тип</div>
         <select id="mType" onchange="updateMealModalUI()">
           <option value="ingredient" ${type==="ingredient"?"selected":""}>Ингредиент</option>
-          <option value="snack" ${type==="snack"?"selected":""}>Перекус</option>
+          <option value="snack" ${type==="snack"?"selected":""}>${escapeHtml(window.labelSnackBank || "Вкусняшки")}</option>
           <option value="liquid" ${type==="liquid"?"selected":""}>Напиток</option>
         </select>
       </div>
@@ -1988,30 +1997,41 @@ function mealModalBody(meal){
           <option value="lunch" ${cat==="lunch"?"selected":""}>Обед</option>
           <option value="dinner" ${cat==="dinner"?"selected":""}>Ужин</option>
           <option value="treat" ${cat==="treat"?"selected":""}>Вкусняшки</option>
-          <option value="snack" ${cat==="snack"?"selected":""}>Перекус</option>
+          <option value="snack" ${cat==="snack"?"selected":""}>${escapeHtml(window.labelSnackBank || "Вкусняшки")}</option>
         </select>
       </div>
     </div>
 
-    <div class="row2" style="margin-top:10px">
+    <div class="row2 row2-mobile" style="margin-top:10px">
       <div>
         <div class="muted">Ккал / 100 г</div>
         <input id="mKcal100" type="number" min="0" step="1" placeholder="250" value="${escapeHtml(meal?.calories ?? "")}">
       </div>
       <div>
-        <div class="muted">Вес порции (г)</div>
-        <input id="mPortionG" type="number" min="1" step="1" placeholder="100" value="${escapeHtml(meal?.portionG ?? meal?.defaultAmount ?? "100")}">
+        <div class="muted">ккал / порция</div>
+        <input id="mKcalPortion" type="number" min="0" step="1" placeholder="0">
       </div>
     </div>
 
-    <div class="row2" style="margin-top:10px">
+    <div class="row2 row2-mobile" style="margin-top:10px">
       <div>
         <div class="muted">Белок / 100 г</div>
         <input id="mProtein100" type="number" min="0" step="0.1" placeholder="0" value="${escapeHtml(meal?.proteinG ?? "")}">
       </div>
       <div>
+        <div class="muted">белок / порция</div>
+        <input id="mProteinPortion" type="number" min="0" step="0.1" placeholder="0">
+      </div>
+    </div>
+
+    <div class="row2" style="margin-top:10px">
+      <div>
         <div class="muted">Жидкость / 100 г (мл)</div>
         <input id="mFluid100" type="number" min="0" step="1" placeholder="0" value="${escapeHtml(meal?.fluidMl ?? "")}">
+      </div>
+      <div>
+        <div class="muted">Вес порции (г)</div>
+        <input id="mPortionG" type="number" min="1" step="1" placeholder="100" value="${escapeHtml(meal?.portionG ?? meal?.defaultAmount ?? "")}">
       </div>
     </div>
 
@@ -2229,9 +2249,19 @@ async function openAddMealModal(defaultVal){
         updatedAt: new Date().toISOString()
       };
 
-      const g = String(document.getElementById("mPortionG")?.value ?? "").trim();
-      if(g){
-        const n = Number(g);
+      let gVal = String(document.getElementById("mPortionG")?.value ?? "").trim();
+      const kp = Number(document.getElementById("mKcalPortion")?.value || 0);
+
+      if(!gVal){
+        if(k100 > 0 && kp > 0){
+          gVal = String(Math.round(kp * 100 / k100));
+        } else if(k100 > 0){
+          gVal = "100";
+        }
+      }
+
+      if(gVal){
+        const n = Number(gVal);
         if(Number.isFinite(n) && n > 0) {
           meal.portionG = Math.round(n);
           meal.defaultAmount = Math.round(n);
@@ -2286,9 +2316,19 @@ async function openEditMealModal(mealId){
         updatedAt: new Date().toISOString()
       };
 
-      const g = String(document.getElementById("mPortionG")?.value ?? "").trim();
-      if(g){
-        const n = Number(g);
+      let gVal = String(document.getElementById("mPortionG")?.value ?? "").trim();
+      const kp = Number(document.getElementById("mKcalPortion")?.value || 0);
+
+      if(!gVal){
+        if(k100 > 0 && kp > 0){
+          gVal = String(Math.round(kp * 100 / k100));
+        } else if(k100 > 0){
+          gVal = "100";
+        }
+      }
+
+      if(gVal){
+        const n = Number(gVal);
         if(Number.isFinite(n) && n > 0) {
           updated.portionG = Math.round(n);
           updated.defaultAmount = Math.round(n);
@@ -2328,6 +2368,9 @@ function installMealKcalAutocalc(root = document){
   const f100 = root.querySelector("#mFluid100");
   const portG = root.querySelector("#mPortionG");
   
+  const kPortion = root.querySelector("#mKcalPortion");
+  const pPortion = root.querySelector("#mProteinPortion");
+  
   const previewK = root.querySelector("#previewKcal");
   const previewP = root.querySelector("#previewProtein");
   
@@ -2348,15 +2391,73 @@ function installMealKcalAutocalc(root = document){
     if(weight > 0){
       previewK.textContent = Math.round(valK * weight / 100);
       previewP.textContent = (valP * weight / 100).toFixed(1);
+      
+      // Also update the "per portion" input fields if they exist
+      if(kPortion && document.activeElement !== kPortion && valK > 0) {
+        kPortion.value = Math.round(valK * weight / 100);
+      }
+      if(pPortion && document.activeElement !== pPortion && valP > 0) {
+        const protVal = valP * weight / 100;
+        pPortion.value = protVal % 1 === 0 ? protVal : protVal.toFixed(1);
+      }
     } else {
       previewK.textContent = "0";
       previewP.textContent = "0";
+      // Don't erase per-portion fields if user is typing there or if density is missing
+      if(kPortion && document.activeElement !== kPortion && valK > 0) kPortion.value = "";
+      if(pPortion && document.activeElement !== pPortion && valP > 0) pPortion.value = "";
     }
   };
 
-  [k100, p100, f100, portG].forEach(el => {
+  [k100, p100, f100].forEach(el => {
     el.addEventListener("input", updatePreview);
   });
+
+  portG.addEventListener("change", () => {
+    const weight = read(portG);
+    if(weight > 0){
+      // If density is 0 but portion total is set, calculate density
+      if(read(k100) === 0 && read(kPortion) > 0){
+        k100.value = Math.round(read(kPortion) * 100 / weight);
+      }
+      if(read(p100) === 0 && read(pPortion) > 0){
+        const newP100 = read(pPortion) * 100 / weight;
+        p100.value = newP100 % 1 === 0 ? newP100 : newP100.toFixed(1);
+      }
+    }
+    updatePreview();
+  });
+
+  if(kPortion){
+    kPortion.addEventListener("change", () => {
+      const pk = read(kPortion);
+      const weight = read(portG);
+      const vk100 = read(k100);
+      
+      if(vk100 === 0 && weight > 0){
+        k100.value = Math.round(pk * 100 / weight);
+      } else if(vk100 > 0){
+        portG.value = Math.round(pk * 100 / vk100);
+      }
+      updatePreview();
+    });
+  }
+
+  if(pPortion){
+    pPortion.addEventListener("change", () => {
+      const pp = read(pPortion);
+      const weight = read(portG);
+      const vp100 = read(p100);
+      
+      if(vp100 === 0 && weight > 0){
+        const newP100 = pp * 100 / weight;
+        p100.value = newP100 % 1 === 0 ? newP100 : newP100.toFixed(1);
+      } else if(vp100 > 0){
+        portG.value = Math.round(pp * 100 / vp100);
+      }
+      updatePreview();
+    });
+  }
   
   updatePreview();
 }
@@ -2500,6 +2601,7 @@ async function loadSettings(){
   const autoSave = await metaGet("settings.autoSaveOnNewDay");
   const favEnabled = await metaGet("settings.favoritesEnabled");
   const appTitle = await metaGet("settings.appTitle");
+  const snackLabel = await metaGet("settings.labelSnackBank");
 
   document.getElementById("setHeight").value = h ?? 152;
   document.getElementById("setAge").value = a ?? 30;
@@ -2526,6 +2628,7 @@ async function loadSettings(){
 
   document.getElementById("setAppTitle").value = appTitle ?? "";
   document.getElementById("appTitle").textContent = appTitle ?? "Food Plan";
+  document.getElementById("labelSnackBank").value = snackLabel ?? "Вкусняшки";
 
   window.favoritesEnabled = !!favEnabled;
   window.bmrMultiplier = Number.isFinite(mult) ? mult : 1.2;
@@ -2534,6 +2637,7 @@ async function loadSettings(){
   window.waterGoalMl = (Number.isFinite(wGoal) && wGoal >= 0) ? Math.round(wGoal) : 2000;
   window.nettoMode = mode;
   window.autoSaveOnNewDay = (autoSave === null) ? true : !!autoSave;
+  window.labelSnackBank = snackLabel ?? "Вкусняшки";
 
   const dbg = await metaGet("debug.enabled");
   document.getElementById("dbgEnabled").checked = !!dbg;
@@ -2550,6 +2654,7 @@ async function loadSettings(){
   if(elDark) elDark.checked = !!themeDark;
 
   applyTheme();
+  updateDynamicLabels();
 }
 async function saveSettings(){
   const h = Number(document.getElementById("setHeight").value || 0);
@@ -2563,6 +2668,7 @@ async function saveSettings(){
   const autoSave = document.getElementById("autoSaveOnNewDay").checked;
   const favEnabled = document.getElementById("favoritesEnabled").checked;
   const appTitle = document.getElementById("setAppTitle").value.trim();
+  const snackLabel = document.getElementById("labelSnackBank").value.trim() || "Вкусняшки";
 
   const topToday = String(document.getElementById("topColorToday")?.value || "#2f6fed");
   const topPast = String(document.getElementById("topColorPast")?.value || "#ec4899");
@@ -2587,6 +2693,7 @@ async function saveSettings(){
   await metaSet("settings.autoSaveOnNewDay", autoSave);
   await metaSet("settings.favoritesEnabled", favEnabled);
   await metaSet("settings.appTitle", appTitle);
+  await metaSet("settings.labelSnackBank", snackLabel);
   await metaSet("theme.topToday", topToday);
   await metaSet("theme.topPast", topPast);
   await metaSet("theme.dark", !!dark);
@@ -2605,10 +2712,12 @@ async function saveSettings(){
   window.waterGoalMl = Math.round(waterGoalMl);
   window.nettoMode = mode;
   window.autoSaveOnNewDay = autoSave;
+  window.labelSnackBank = snackLabel;
 
   renderFoodAll();
   renderActivities();
   updateTopTotals();
+  updateDynamicLabels();
   setStatus("Настройки сохранены.");
 }
 
@@ -2947,11 +3056,8 @@ function wirePortionModal(){
         closePortionModal();
       };
 
-      if(meal.type === "recipe"){
-        openClassificationModal(finishAdd);
-      } else {
-        await finishAdd(meal.category);
-      }
+      // Always show classification modal
+      openClassificationModal(finishAdd);
     } else {
       closePortionModal();
     }
@@ -3220,6 +3326,12 @@ function wireClassificationModal(){
   document.getElementById("cancelClassifyBtn")?.addEventListener("click", () => {
     currentClassifyCallback = null;
     closeClassificationModal();
+  });
+  document.getElementById("classificationModalBack")?.addEventListener("click", (e) => {
+    if(e.target.id === "classificationModalBack"){
+      currentClassifyCallback = null;
+      closeClassificationModal();
+    }
   });
 }
 
@@ -4324,11 +4436,8 @@ function wireGlobalClicks(){
         setStatus("Добавлено.");
       };
 
-      if(m && m.type === "recipe"){
-        openClassificationModal(finishAdd);
-      } else {
-        await finishAdd(m?.category);
-      }
+      // Always show classification modal for any consumption
+      openClassificationModal(finishAdd);
       return;
     }
 
@@ -4599,75 +4708,6 @@ async function wireActions(){
   installLongPress(document.getElementById("activityList"), "[data-act-card]", el => el.getAttribute("data-act-card"), openEditActivityModal);
 
   applyTabUI("day");
-
-  // Visual Viewport logic to keep header pinned even when layout shifts (keyboard)
-  if (window.visualViewport) {
-    const vv = window.visualViewport;
-    const header = document.getElementById("masterHeader");
-    const syncHeaderPos = () => {
-      if (!header) return;
-      // offsetTop is > 0 when the layout viewport is pushed up (keyboard)
-      // We translate the header down by that same amount to keep it in view
-      const offset = vv.offsetTop;
-      if (offset > 0) {
-        header.style.transform = `translateY(${offset}px)`;
-      } else {
-        header.style.transform = "";
-      }
-    };
-    vv.addEventListener("scroll", syncHeaderPos);
-    vv.addEventListener("resize", syncHeaderPos);
-  }
-
-  // Synchronous Dashboard Collapse Logic
-  const dashMiddle = document.getElementById("dashMiddle");
-  const mainDashboard = document.getElementById("mainDashboard");
-  
-  let middleHeight = 0;
-  let initialDashHeight = 0;
-
-  const measureDash = () => {
-    if(!dashMiddle || !mainDashboard) return;
-    
-    // Always reset to measure correctly
-    dashMiddle.style.marginTop = "0px";
-    mainDashboard.style.height = "auto";
-    mainDashboard.classList.remove("collapsed");
-    
-    // Force browser to layout before measuring
-    void mainDashboard.offsetHeight;
-
-    middleHeight = dashMiddle.scrollHeight;
-    initialDashHeight = mainDashboard.offsetHeight;
-  };
-  window.measureDash = measureDash;
-
-  if(dashMiddle && mainDashboard){
-    setTimeout(measureDash, 500);
-
-    window.addEventListener("scroll", () => {
-      window.requestAnimationFrame(() => {
-        if(!middleHeight) measureDash();
-        
-        const scroll = window.scrollY;
-        const move = Math.min(scroll, middleHeight);
-        
-        dashMiddle.style.marginTop = `-${move}px`;
-        mainDashboard.style.height = `${initialDashHeight - move}px`;
-
-        const activeTab = document.querySelector(".tab.active");
-        if(activeTab) {
-          activeTab.style.transform = `translate3d(0, ${move}px, 0)`;
-        }
-        
-        if(move >= middleHeight - 1) {
-          mainDashboard.classList.add("collapsed");
-        } else {
-          mainDashboard.classList.remove("collapsed");
-        }
-      });
-    }, { passive: true });
-  }
 }
 
 function seedMealsIfEmpty(arr){
@@ -4751,7 +4791,6 @@ async function loadAll(){
   await migrateLegacyDraftOnce();
   await autoSaveDraftIfDateChanged();
   await applyViewDate(await getAppDateISO());
-  await renderLogs();
 }
 
 function wireFab() {
@@ -4832,10 +4871,42 @@ async function main(){
   wireDraftInputs();
   wireGlobalClicks();
   wireActivityInputs();
+  wireAutoSelect();
+  wireAutoScrollSearch();
   await wireActions();
   await loadAll();
 }
 window.main = main;
+
+function wireAutoSelect() {
+  document.addEventListener("focusin", (e) => {
+    if (e.target && e.target.tagName === "INPUT") {
+      // Small timeout to ensure selection happens after browser default behavior
+      setTimeout(() => {
+        if (typeof e.target.select === "function") {
+          e.target.select();
+        }
+      }, 50);
+    }
+  });
+}
+
+function wireAutoScrollSearch() {
+  document.addEventListener("focusin", (e) => {
+    const el = e.target;
+    if (el && (el.id === "foodSearch" || el.id === "actSearch")) {
+      // Delay to allow keyboard to appear and browser-default scroll to settle
+      setTimeout(() => {
+        const rect = el.getBoundingClientRect();
+        const absoluteTop = rect.top + window.scrollY;
+        window.scrollTo({
+          top: absoluteTop - 20,
+          behavior: "smooth"
+        });
+      }, 300);
+    }
+  });
+}
 
 main();
 
