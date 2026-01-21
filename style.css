@@ -105,7 +105,7 @@ body.dark .dash-field-input::placeholder { color: #9ca3af; }
 input,textarea,select{width:100%;box-sizing:border-box;padding:10px;border-radius:10px;border:1px solid #ddd;font-size:16px;user-select:text;-webkit-user-select:text}
 textarea{min-height:90px}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-@media (max-width:680px){.grid2{grid-template-columns:1fr}}
+@media (max-width:680px){.grid2:not(.modal .grid2){grid-template-columns:1fr}}
 .status{margin-top:5px;font-size:13px;opacity:.95;min-height:13px}
 .todayBox{background:#fff;border-radius:14px;padding:12px;box-shadow:0 2px 10px rgba(0,0,0,.08)}
 .itemRow{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid #eee;align-items:center}
@@ -116,7 +116,6 @@ textarea{min-height:90px}
 .modal h3{margin:0 0 10px}
 .modal .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;justify-content:flex-end}
 .modal .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.modal .row2-mobile{grid-template-columns:1fr 1fr !important}
 @media (max-width:480px){.modal .row2{grid-template-columns:1fr}}
 .hidden{display:none !important}
 .fullBar{background:rgba(255,255,255,.25);border-radius:999px;height:10px;overflow:hidden;margin-top:10px}
@@ -125,8 +124,8 @@ textarea{min-height:90px}
 .mealCardActions{display:flex;gap:8px;align-items:center;justify-content:flex-end;flex-wrap:wrap;margin-top:8px}
 .mealMeta{margin-top:6px}
 .todayToggleRow{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-.scanVideo{width:100%;border-radius:14px;background:#000;aspect-ratio:16/9;object-fit:cover}
-.scanOverlay{position:relative}
+.scanVideo{width:90dvw;max-width:100%;margin:0 auto;border-radius:14px;background:#000;aspect-ratio:1/1;object-fit:cover;display:block}
+.scanOverlay{position:relative;display:flex;justify-content:center}
 .scanHint{position:absolute;left:10px;right:10px;bottom:10px;background:rgba(0,0,0,.55);color:#fff;border-radius:10px;padding:8px 10px;font-size:13px}
 
 
