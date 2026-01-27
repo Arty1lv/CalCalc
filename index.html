@@ -2,9 +2,12 @@
 <html lang="ru">
 <head>
   <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Food Plan MVP v17.20</title>
-  <link rel="stylesheet" href="style.css">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+  <title>TinyWife</title>
+  <link rel="stylesheet" href="style.css?v=17.21">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#f6f7fb">
+  <link rel="apple-touch-icon" href="icon-192.png">
 </head>
 <body>
   <div class="master-header" id="masterHeader">
@@ -12,7 +15,7 @@
       <!-- Top Section: Persistent Title & Progress -->
       <div class="dash-top">
         <div class="header-main-row">
-          <div id="appTitle" style="font-size:18px;font-weight:900">Food Plan</div>
+          <div id="appTitle" style="font-size:18px;font-weight:900">TinyWife</div>
           <div class="mutedOnBlue clickable" id="headerDateContainer">
             <span id="uiDate"></span> <span id="uiDebugTag"></span>
             <input id="datePicker" type="date" class="hidden">
@@ -330,6 +333,14 @@
       </div>
     </div>
 
+    <div class="card" style="margin-top:10px">
+      <div style="font-weight:900">Уведомления</div>
+      <div class="muted" style="margin-top:6px">Разрешить браузеру отправлять уведомления.</div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px">
+        <button class="btn secondary" id="btnToggleNotifications">Включить уведомления</button>
+      </div>
+    </div>
+
     <div class="card" style="margin-top:10px; border:2px solid #dc2626; background:#fef2f2">
       <div style="font-weight:900; color:#dc2626">Опасная зона</div>
       <div class="muted" style="margin-top:6px">Сбросит весь журнал (логи) — блюда/активности останутся.</div>
@@ -610,6 +621,6 @@
 
   <button id="fab" class="fab" style="display:none" title="Добавить">+</button>
 
-  <script type="module" src="script.js"></script>
+  <script type="module" src="script.js?v=17.21"></script>
 </body>
 </html>

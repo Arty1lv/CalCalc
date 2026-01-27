@@ -4,7 +4,7 @@ body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;margin
   z-index: 1000;
   background: #f6f7fb;
   margin: 0 -14px;
-  padding: 14px 14px 10px 14px;
+  padding: env(safe-area-inset-top) 14px 10px 14px;
 }
 body.dark .master-header { background: #0b1220; }
 
@@ -15,7 +15,7 @@ body.dark .master-header { background: #0b1220; }
   position: relative;
   z-index: 150;
   background: inherit;
-  padding: 14px 14px 4px 14px;
+  padding: 4px 14px 4px 14px;
   transform: translate3d(0,0,0);
 }
 

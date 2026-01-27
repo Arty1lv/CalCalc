@@ -1,3 +1,12 @@
+/* ---------- Service Worker ---------- */
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .then(reg => console.log('Service Worker registered', reg))
+      .catch(err => console.log('Service Worker registration failed', err));
+  });
+}
+
 /* ---------- IndexedDB ---------- */
 const DBNAME = "food-plan-db";
 const DBVER = 8;
@@ -250,6 +259,12 @@ function applyHeaderPalette(forceIsPast){
   document.documentElement.style.setProperty("--pillText", pillText);
   document.documentElement.style.setProperty("--pillBorder", pillBorder);
   document.documentElement.style.setProperty("--pillMuted", pillMuted);
+
+  // Update PWA theme-color to match page background for a consistent look
+  const metaTheme = document.querySelector('meta[name="theme-color"]');
+  if(metaTheme) {
+    metaTheme.setAttribute('content', themeDark ? "#0b1220" : "#f6f7fb");
+  }
 }
 
 
@@ -5343,6 +5358,7 @@ async function main(){
   wireAutoScrollSearch();
   wireHeaderScore();
   wireRecipeScore();
+  wireNotifications();
   await wireActions();
   await loadAll();
 }
@@ -5410,6 +5426,45 @@ function wireRecipeScore() {
   });
 }
 window.wireRecipeScore = wireRecipeScore;
+
+async function wireNotifications() {
+  const btn = document.getElementById("btnToggleNotifications");
+  if (!btn) return;
+
+  const updateUI = () => {
+    if (!("Notification" in window)) {
+      btn.textContent = "Не поддерживается";
+      btn.disabled = true;
+      return;
+    }
+    if (Notification.permission === "granted") {
+      btn.textContent = "Включены (OK)";
+    } else if (Notification.permission === "denied") {
+      btn.textContent = "Заблокированы";
+      btn.disabled = true;
+    } else {
+      btn.textContent = "Включить уведомления";
+    }
+  };
+
+  btn.addEventListener("click", async () => {
+    if (!("Notification" in window)) return;
+    try {
+      const permission = await Notification.requestPermission();
+      updateUI();
+      if (permission === "granted") {
+        new Notification("TinyWife", { 
+          body: "Уведомления успешно включены!", 
+          icon: "icon-192.png" 
+        });
+      }
+    } catch (err) {
+      console.error("Permission request failed", err);
+    }
+  });
+
+  updateUI();
+}
 
 function wireAutoSelect() {
   document.addEventListener("focusin", (e) => {
