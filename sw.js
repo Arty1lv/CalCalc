@@ -1,9 +1,10 @@
-const CACHE_NAME = 'tinywife-v5';
+const CACHE_NAME = 'tinywife-v6';
 const ASSETS = [
   './',
   './index.html',
   './style.css?v=17.21',
   './script.js?v=17.33',
+  './sharingService.js?v=17.33',
   './manifest.json',
   './icon-192.png',
   './icon-512.png',
