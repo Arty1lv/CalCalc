@@ -659,37 +659,13 @@ async function compressPayload(obj){
   return lz.compressToEncodedURIComponent(JSON.stringify(obj));
 }
 
-async function decompressPayload(str){
-  const lz = await ensureLZString();
-  const json = lz.decompressFromEncodedURIComponent(str);
-  return JSON.parse(json);
-}
+    async function decompressPayload(str){
+      const lz = await ensureLZString();
+      const json = lz.decompressFromEncodedURIComponent(str);
+      return JSON.parse(json);
+    }
 
-async function ensureQRious() {
-  if (window.QRious) return window.QRious;
-  return new Promise((resolve, reject) => {
-    const s = document.createElement('script');
-    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js';
-    s.onload = () => resolve(window.QRious);
-    s.onerror = () => reject(new Error("Failed to load QRious"));
-    document.head.appendChild(s);
-  });
-}
-
-async function generateQRCode(text, canvasElement){
-  if(!canvasElement) return;
-  const QRious = await ensureQRious();
-  new QRious({
-    element: canvasElement,
-    value: text,
-    size: 1024,
-    level: 'H',
-    padding: 0
-  });
-}
-
-async function parseBundle(text){
-  let data;
+    async function parseBundle(text){  let data;
   const t = text.trim();
   
   try {
@@ -766,41 +742,98 @@ class ResolutionState {
 }
 
 async function openShareModal(recipeId){
-  const items = getRecipeDependencies(recipeId);
-  if(!items.length) return;
-  
-  const root = items.find(x => x.id === recipeId);
-  const bundleText = serializeBundle(recipeId, items);
-  const compressed = await compressPayload({
-    v: 2,
-    root: recipeId,
-    items: items
-  });
-  
-  const back = document.getElementById("shareModalBack");
-  const nameEl = document.getElementById("shareItemName");
-  const canvas = document.getElementById("shareQR");
-  const qrError = document.getElementById("qrError");
-  
-  if(nameEl) nameEl.textContent = root?.name || "Блюдо";
-  
-  // Show modal
-  if(back) back.style.display = "block";
-  pushModalState("shareModalBack");
 
-  // Generate QR if possible (limit ~2.5KB for reliability)
-  if(compressed.length < 2500){
-    qrError?.classList.add("hidden");
-    canvas?.classList.remove("hidden");
-    await generateQRCode(compressed, canvas);
-  } else {
-    qrError?.classList.remove("hidden");
-    canvas?.classList.add("hidden");
-  }
+  const items = getRecipeDependencies(recipeId);
+
+  if(!items.length) return;
+
   
-  // Clipboard wiring
-  const copyBtn = document.getElementById("btnCopyShareText");
-  const originalText = copyBtn.textContent;
+
+  const root = items.find(x => x.id === recipeId);
+
+  const bundleText = serializeBundle(recipeId, items);
+
+  
+
+  const back = document.getElementById("shareModalBack");
+
+  const nameEl = document.getElementById("shareItemName");
+
+  
+
+  if(nameEl) nameEl.textContent = root?.name || "Блюдо";
+
+  
+
+    // Show modal
+
+  
+
+    if(back) back.style.display = "block";
+
+  
+
+    pushModalState("shareModalBack");
+
+  
+
+  
+
+  
+
+    // Share Link wiring
+
+  
+
+    const shareLinkBtn = document.getElementById("btnShareLink");
+
+  
+
+    if(shareLinkBtn){
+
+  
+
+      const newBtn = shareLinkBtn.cloneNode(true);
+
+  
+
+      shareLinkBtn.parentNode.replaceChild(newBtn, shareLinkBtn);
+
+  
+
+      
+
+  
+
+      newBtn.addEventListener("click", () => {
+
+  
+
+        // Trigger the link share
+
+  
+
+        window.shareRecipeLink(root, items);
+
+  
+
+      });
+
+  
+
+    }
+
+  
+
+    
+
+  
+
+    // Clipboard wiring
+
+  
+
+    const copyBtn = document.getElementById("btnCopyShareText");  const originalText = copyBtn.textContent;
   
   // Clear any old listener by cloning
   const newBtn = copyBtn.cloneNode(true);
@@ -845,23 +878,21 @@ window._getImportResolution = () => importResolution;
 /** @param {ResolutionState|null} val */
 window._setImportResolution = (val) => { importResolution = val; };
 
-async function openImportModal(){
-  const back = document.getElementById("importModalBack");
-  if(back) back.style.display = "block";
-  pushModalState("importModalBack");
-  
-  // Reset UI state
-  document.getElementById("importStepInput").classList.remove("hidden");
-  document.getElementById("importStepScanner").classList.add("hidden");
-  document.getElementById("importStepReview").classList.add("hidden");
-  document.getElementById("btnExecuteImport").classList.add("hidden");
-  document.getElementById("importPasteText").value = "";
-  
-  importBundle = null;
-  importAnalysis = null;
-  importResolution = new ResolutionState();
-}
-
+    async function openImportModal(){
+      const back = document.getElementById("importModalBack");
+      if(back) back.style.display = "block";
+      pushModalState("importModalBack");
+      
+      // Reset UI state
+      document.getElementById("importStepInput").classList.remove("hidden");
+      document.getElementById("importStepReview").classList.add("hidden");
+      document.getElementById("btnExecuteImport").classList.add("hidden");
+      document.getElementById("importPasteText").value = "";
+      
+      importBundle = null;
+      importAnalysis = null;
+      importResolution = new ResolutionState();
+    }
 async function handleImportPayload(text){
   try {
     const bundle = await parseBundle(text);
@@ -870,7 +901,6 @@ async function handleImportPayload(text){
     
     // Switch to review step
     document.getElementById("importStepInput").classList.add("hidden");
-    document.getElementById("importStepScanner").classList.add("hidden");
     document.getElementById("importStepReview").classList.remove("hidden");
     document.getElementById("btnExecuteImport").classList.remove("hidden");
     
@@ -878,29 +908,6 @@ async function handleImportPayload(text){
   } catch(e) {
     alert("Ошибка парсинга: " + e.message);
   }
-}
-
-async function startImportScan(){
-  const hint = document.getElementById("importScanHint");
-  const video = document.getElementById("importScanVideo");
-  const container = document.getElementById("importStepScanner");
-  
-  document.getElementById("importStepInput").classList.add("hidden");
-  if(container) {
-    container.classList.remove("hidden");
-    container.scrollIntoView({ behavior: "smooth", block: "start" });
-  }
-
-  await startHybridScanner(video, hint, async (text) => {
-    stopScanner();
-    await handleImportPayload(text);
-  });
-}
-
-function stopImportScan(){
-  stopScanner();
-  document.getElementById("importStepScanner").classList.add("hidden");
-  document.getElementById("importStepInput").classList.remove("hidden");
 }
 
 function renderImportReview(){
@@ -1163,37 +1170,97 @@ async function executeImport(bundle, resState, analysis){
   window.meals = await txGetAll("meals");
 }
 
-function wireImportModal(){
-  document.getElementById("closeImportBtn")?.addEventListener("click", () => {
-    const back = document.getElementById("importModalBack");
-    if (back && back.style.display === "block") {
-      back.style.display = "none";
-      stopImportScan();
-      if (history.state && history.state.modals && history.state.modals.includes("importModalBack")) {
-        history.back();
-      } else {
-        syncUI(history.state);
+    async function handleFileImport(file){
+      if(!file) return;
+      try {
+        const text = await file.text();
+        await handleImportPayload(text);
+      } catch(err) {
+        console.error("File import failed:", err);
+        alert("Не удалось прочитать файл: " + err.message);
       }
     }
-  });
-  
-  document.getElementById("btnImportClipboard")?.addEventListener("click", async () => {
-    if (!window.isSecureContext) {
-      alert("Доступ к буферу обмена требует безопасного соединения (HTTPS или localhost). Пожалуйста, вставьте текст вручную.");
-      return;
-    }
-    try {
-      const text = await navigator.clipboard.readText();
-      if(text) await handleImportPayload(text);
-    } catch { 
-      alert("Нет доступа к буферу обмена. Убедитесь, что вы разрешили доступ в настройках браузера или вставьте текст вручную."); 
-    }
-  });
-  
-  document.getElementById("btnImportScan")?.addEventListener("click", startImportScan);
-  document.getElementById("btnStopImportScan")?.addEventListener("click", stopImportScan);
-  
-  document.getElementById("importPasteText")?.addEventListener("input", () => {
+    window.handleFileImport = handleFileImport;
+
+        function wireImportModal(){
+
+          document.getElementById("closeImportBtn")?.addEventListener("click", () => {
+
+            const back = document.getElementById("importModalBack");
+
+            if (back && back.style.display === "block") {
+
+              back.style.display = "none";
+
+              if (history.state && history.state.modals && history.state.modals.includes("importModalBack")) {
+
+                history.back();
+
+              } else {
+
+                syncUI(history.state);
+
+              }
+
+            }
+
+          });
+
+          
+
+          document.getElementById("btnImportClipboard")?.addEventListener("click", async () => {
+
+            if (!window.isSecureContext) {
+
+              alert("Доступ к буферу обмена требует безопасного соединения (HTTPS или localhost). Пожалуйста, вставьте текст вручную.");
+
+              return;
+
+            }
+
+            try {
+
+              const text = await navigator.clipboard.readText();
+
+              if(text) await handleImportPayload(text);
+
+            } catch { 
+
+              alert("Нет доступа к буферу обмена. Убедитесь, что вы разрешили доступ в настройках браузера или вставьте текст вручную."); 
+
+            }
+
+          });
+
+          
+
+          const btnFile = document.getElementById("btnImportFile");
+
+          const inputFile = document.getElementById("inputImportFile");
+
+          
+
+          btnFile?.addEventListener("click", () => inputFile?.click());
+
+          inputFile?.addEventListener("change", async (e) => {
+
+            const file = e.target.files[0];
+
+            if (file) {
+
+              await handleFileImport(file);
+
+              // Clear input so same file can be re-selected if needed
+
+              e.target.value = "";
+
+            }
+
+          });
+
+          
+
+          document.getElementById("importPasteText")?.addEventListener("input", () => {
     const val = document.getElementById("importPasteText").value.trim();
     if(val.startsWith("{") || val.includes("---")) {
       handleImportPayload(val);
@@ -4536,29 +4603,11 @@ async function detectionLoop(video, callback) {
           console.log("Native BarcodeDetector found:", barcodes[0].rawValue.substring(0, 30) + "...");
           callback(barcodes[0].rawValue);
         }
-      } catch (err) {
-        console.error("BarcodeDetector error:", err);
-      }
-    } else if (typeof window.jsQR !== 'undefined') {
-      // jsQR Fallback
-      if (!scannerCanvas) {
-        scannerCanvas = document.createElement("canvas");
-        scannerContext = scannerCanvas.getContext("2d", { willReadFrequently: true });
-      }
-      scannerCanvas.width = video.videoWidth;
-      scannerCanvas.height = video.videoHeight;
-      scannerContext.drawImage(video, 0, 0, scannerCanvas.width, scannerCanvas.height);
-      const imageData = scannerContext.getImageData(0, 0, scannerCanvas.width, scannerCanvas.height);
-      const code = window.jsQR(imageData.data, imageData.width, imageData.height, {
-        inversionAttempts: "dontInvert",
-      });
-      if (code && scannerActive) {
-        console.log("jsQR found:", code.data.substring(0, 30) + "...");
-        callback(code.data);
-      }
-    }
-  }
-
+                } catch (err) {
+                  console.error("BarcodeDetector error:", err);
+                }
+              }
+            }
   if (scannerActive) {
     scannerRafId = requestAnimationFrame(() => detectionLoop(video, callback));
   }
@@ -4626,15 +4675,9 @@ async function startHybridScanner(video, hint, onFound) {
     return;
   }
 
-  try {
-    if (!window.checkScannerSupport()) {
-      if (hint) hint.textContent = "Загрузка fallback…";
-      await window.loadJsQR();
-    }
-
-    if (hint) hint.textContent = "Доступ к камере…";
-    const stream = await initScannerStream();
-    video.srcObject = stream;
+        try {
+          if (hint) hint.textContent = "Доступ к камере…";
+          const stream = await initScannerStream();    video.srcObject = stream;
     video.setAttribute("playsinline", true);
     await video.play();
 
@@ -5334,21 +5377,63 @@ function wireTabsAndEditors(){
   });
 }
 
-async function main(){
-  window.openAddMealModal = openAddMealModal;
-  window.openAddActivityModal = openAddActivityModal;
-  window.openRecipeBuilder = openRecipeBuilder;
-  window.currentFoodType = currentFoodType;
+    async function checkUrlForSharedRecipe(){
+      const params = new URLSearchParams(window.location.search);
+      const recipeData = params.get('recipe');
+      if (recipeData) {
+        console.log('Shared recipe detected in URL');
+        await handleLinkImport(recipeData);
+        
+        // Clean up URL to prevent re-import on refresh
+        const newUrl = window.location.pathname + window.location.hash;
+        window.history.replaceState({}, '', newUrl);
+      }
+    }
 
-  initHistory();
-  wireClassificationModal();
-  wireTabsAndEditors();
-  wirePortionModal();
-  wireRecipeBuilder();
-  wireShareModal();
-  wireImportModal();
-  wireFab();
-  wireModalButtons();
+    async function handleLinkImport(compressedData){
+      try {
+        const lz = await ensureLZString();
+        const json = lz.decompressFromEncodedURIComponent(compressedData);
+        if (json) {
+          await openImportModal();
+          await handleImportPayload(json);
+        }
+      } catch(err) {
+        console.error('Failed to decompress shared recipe:', err);
+        alert('Не удалось загрузить рецепт по ссылке');
+      }
+    }
+
+    function wireLaunchQueue(){
+      if ('launchQueue' in window) {
+        window.launchQueue.setConsumer(async (launchParams) => {
+          if (launchParams.files && launchParams.files.length > 0) {
+            // Automatically open import modal if files are present
+            await openImportModal();
+            for (const fileHandle of launchParams.files) {
+              const file = await fileHandle.getFile();
+              await handleFileImport(file);
+            }
+          }
+        });
+      }
+    }
+
+    async function main(){
+      window.openAddMealModal = openAddMealModal;
+      window.openAddActivityModal = openAddActivityModal;
+      window.openRecipeBuilder = openRecipeBuilder;
+      window.currentFoodType = currentFoodType;
+
+      initHistory();
+      wireClassificationModal();
+      wireTabsAndEditors();
+      wirePortionModal();
+      wireRecipeBuilder();
+      wireShareModal();
+      wireImportModal();
+      wireLaunchQueue();
+      wireFab();  wireModalButtons();
   wireBarcodeSearch();
   wireAddButtons();
   wireDraftInputs();
@@ -5356,14 +5441,14 @@ async function main(){
   wireActivityInputs();
   wireAutoSelect();
   wireAutoScrollSearch();
-  wireHeaderScore();
-  wireRecipeScore();
-  wireNotifications();
-  await wireActions();
-  await loadAll();
-}
-window.main = main;
-
+        wireHeaderScore();
+        wireRecipeScore();
+        wireNotifications();
+        await wireActions();
+        await loadAll();
+        await checkUrlForSharedRecipe();
+      }
+      window.main = main;
 function wireHeaderScore() {
   const container = document.getElementById("modalScoreContainer");
   if (!container) return;
@@ -5566,13 +5651,11 @@ window.searchFood = searchFood;
 window.searchFoodUSDA = searchFoodUSDA;
 window.getMealById = getMealById;
 window.getRecipeDependencies = getRecipeDependencies;
-window.serializeBundle = serializeBundle;
-window.compressPayload = compressPayload;
-window.decompressPayload = decompressPayload;
-window.generateQRCode = generateQRCode;
-window.parseBundle = parseBundle;
-window.analyzeImport = analyzeImport;
-window.executeImport = executeImport;
+    window.serializeBundle = serializeBundle;
+    window.compressPayload = compressPayload;
+    window.decompressPayload = decompressPayload;
+    window.parseBundle = parseBundle;
+    window.analyzeImport = analyzeImport;window.executeImport = executeImport;
 window.ResolutionState = ResolutionState;
 window.openShareModal = openShareModal;
 window.openImportModal = openImportModal;
@@ -5624,26 +5707,9 @@ function triggerHaptic(){
 }
 window.triggerHaptic = triggerHaptic;
 
-/**
- * Checks if the native BarcodeDetector API is supported.
- */
-function checkScannerSupport() {
-  return typeof window.BarcodeDetector !== 'undefined';
-}
-window.checkScannerSupport = checkScannerSupport;
+    function checkScannerSupport() {
+      return typeof window.BarcodeDetector !== 'undefined';
+    }
+    window.checkScannerSupport = checkScannerSupport;
 
-/**
- * Lazy-loads the jsQR library for fallback scanning.
- */
-async function loadJsQR() {
-  if (typeof window.jsQR !== 'undefined') return;
-  return new Promise((resolve, reject) => {
-    const script = document.createElement('script');
-    script.src = "https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js";
-    script.onload = resolve;
-    script.onerror = reject;
-    document.head.appendChild(script);
-  });
-}
-window.loadJsQR = loadJsQR;
-
+    

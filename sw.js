@@ -1,15 +1,13 @@
-const CACHE_NAME = 'tinywife-v3';
+const CACHE_NAME = 'tinywife-v5';
 const ASSETS = [
   './',
   './index.html',
   './style.css?v=17.21',
-  './script.js?v=17.21',
+  './script.js?v=17.32',
   './manifest.json',
   './icon-192.png',
   './icon-512.png',
-  'https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js',
-  'https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js',
-  'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js'
+  'https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js'
 ];
 
 self.addEventListener('install', (event) => {
@@ -48,7 +46,7 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(
     caches.open(CACHE_NAME).then(async (cache) => {
       const cachedResponse = await cache.match(event.request);
-      
+
       const networkFetch = fetch(event.request).then((networkResponse) => {
         // Cache basic (same-origin) and cors (CDN) responses
         if (networkResponse && networkResponse.status === 200 && (networkResponse.type === 'basic' || networkResponse.type === 'cors')) {

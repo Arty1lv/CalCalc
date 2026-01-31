@@ -529,12 +529,10 @@
       <div id="shareModalBody">
         <div class="card" style="text-align:center">
           <div id="shareItemName" style="font-weight:900; margin-bottom:10px"></div>
-                <div id="qrContainer" style="margin:20px 0; display:flex; justify-content:center; align-items:center; min-height:200px">
-                  <canvas id="shareQR" style="width:100%; max-width:600px; height:auto; image-rendering:pixelated; image-rendering:crisp-edges"></canvas>
-                  <div id="qrError" class="muted hidden" style="padding:40px 20px; border:2px dashed #ccc; width:100%; text-align:center">
-                    Рецепт слишком большой для QR-кода.<br>Используйте копирование текста.
-                  </div>
-                </div>          <button class="btn secondary" id="btnCopyShareText" style="width:100%">Копировать текст</button>
+          <div style="display:flex; flex-direction:column; gap:10px; margin:20px 0">
+            <button class="btn" id="btnShareLink" style="width:100%">Поделиться ссылкой</button>
+            <button class="btn secondary" id="btnCopyShareText" style="width:100%">Копировать текст</button>
+          </div>
         </div>
       </div>
       <div class="actions">
@@ -550,25 +548,13 @@
         <!-- Step 1: Input -->
         <div id="importStepInput">
           <div class="card">
-            <div class="muted">Вставьте текст или отсканируйте код</div>
+            <div class="muted">Вставьте текст или выберите файл</div>
             <textarea id="importPasteText" style="margin-top:10px; height:100px" placeholder='{"v":2, ...}'></textarea>
             <div style="display:flex; gap:10px; margin-top:10px">
               <button class="btn secondary" id="btnImportClipboard" style="flex:1">Из буфера</button>
-              <button class="btn secondary" id="btnImportScan" style="flex:1">Сканировать</button>
+              <button class="btn secondary" id="btnImportFile" style="flex:1">Выбрать файл</button>
+              <input type="file" id="inputImportFile" class="hidden" accept=".jsonrecipe,.txt,application/json,text/plain"/>
             </div>
-          </div>
-        </div>
-
-        <!-- Step 2: Scanner -->
-        <div id="importStepScanner" class="hidden">
-          <div class="card">
-                      <div class="scanOverlay">
-                        <video id="importScanVideo" class="scanVideo" autoplay playsinline muted></video>
-                        <div class="scanHint" id="importScanHint">Загрузка…</div>
-                        <button id="btnSwitchImportCamera" class="btn secondary tiny" style="position:absolute; top:10px; right:10px; z-index:10; background:rgba(255,255,255,0.8)">📷 Смена</button>
-                      </div>
-            
-            <button class="btn danger" id="btnStopImportScan" style="width:100%; margin-top:10px">Отмена</button>
           </div>
         </div>
 
@@ -621,6 +607,7 @@
 
   <button id="fab" class="fab" style="display:none" title="Добавить">+</button>
 
-  <script type="module" src="script.js?v=17.21"></script>
+  <script src="sharingService.js"></script>
+  <script type="module" src="script.js?v=17.32"></script>
 </body>
 </html>
