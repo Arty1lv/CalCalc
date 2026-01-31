@@ -643,24 +643,13 @@ function serializeBundle(rootRecipeId, items){
   return header + JSON.stringify(payload);
 }
 
-async function ensureLZString() {
-  if (window.LZString) return window.LZString;
-  return new Promise((resolve, reject) => {
-    const s = document.createElement('script');
-    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js';
-    s.onload = () => resolve(window.LZString);
-    s.onerror = () => reject(new Error("Failed to load LZString"));
-    document.head.appendChild(s);
-  });
-}
-
-async function compressPayload(obj){
-  const lz = await ensureLZString();
+function compressPayload(obj){
+  const lz = window.LZString;
   return lz.compressToEncodedURIComponent(JSON.stringify(obj));
 }
 
-    async function decompressPayload(str){
-      const lz = await ensureLZString();
+    function decompressPayload(str){
+      const lz = window.LZString;
       const json = lz.decompressFromEncodedURIComponent(str);
       return JSON.parse(json);
     }
@@ -5392,7 +5381,7 @@ function wireTabsAndEditors(){
 
     async function handleLinkImport(compressedData){
       try {
-        const lz = await ensureLZString();
+        const lz = window.LZString;
         const json = lz.decompressFromEncodedURIComponent(compressedData);
         if (json) {
           await openImportModal();
