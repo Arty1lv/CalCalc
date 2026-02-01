@@ -62,3 +62,44 @@ self.addEventListener('fetch', (event) => {
     })
   );
 });
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const notificationId = event.notification.tag; // We use tag as ID
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      if (clientList.length > 0) {
+        let client = clientList[0];
+        for (let i = 0; i < clientList.length; i++) {
+          if (clientList[i].focused) {
+            client = clientList[i];
+          }
+        }
+        client.focus();
+        client.postMessage({ 
+          type: 'NOTIFICATION_CLICKED', 
+          notificationId: notificationId 
+        });
+        return;
+      }
+      return clients.openWindow('./').then(newClient => {
+        if (newClient) newClient.postMessage({ 
+          type: 'NOTIFICATION_CLICKED', 
+          notificationId: notificationId 
+        });
+      });
+    })
+  );
+});
+
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'DISMISS_NOTIFICATION') {
+    const tag = event.data.tag;
+    event.waitUntil(
+      self.registration.getNotifications({ tag: tag }).then(notifications => {
+        notifications.forEach(n => n.close());
+      })
+    );
+  }
+});

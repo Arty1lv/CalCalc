@@ -1,0 +1,22 @@
+export const genericFoods = [
+  { name: 'Яблоко', calories: 52, proteinG: 0.3, fluidMl: 86, portionG: 180, unit: 'г', type: 'ingredient' },
+  { name: 'Банан', calories: 89, proteinG: 1.1, fluidMl: 75, portionG: 120, unit: 'г', type: 'ingredient' },
+  { name: 'Куриная грудка (сырая)', calories: 110, proteinG: 23.1, fluidMl: 74, portionG: 200, unit: 'г', type: 'ingredient' },
+  { name: 'Курица (сырая)', calories: 190, proteinG: 16.5, fluidMl: 68, portionG: 200, unit: 'г', type: 'ingredient' },
+  { name: 'Свинина (сырая)', calories: 259, proteinG: 16, fluidMl: 58, portionG: 200, unit: 'г', type: 'ingredient' },
+  { name: 'Говядина (сырая)', calories: 133, proteinG: 19, fluidMl: 65, portionG: 200, unit: 'г', type: 'ingredient' },
+  { name: 'Рис (сухой)', calories: 344, proteinG: 6.7, fluidMl: 12, portionG: 80, unit: 'г', type: 'ingredient' },
+  { name: 'Гречка (сухая)', calories: 313, proteinG: 12.6, fluidMl: 13, portionG: 80, unit: 'г', type: 'ingredient' },
+  { name: 'Огурец', calories: 15, proteinG: 0.8, fluidMl: 95, portionG: 150, unit: 'г', type: 'ingredient' },
+  { name: 'Помидор', calories: 18, proteinG: 0.9, fluidMl: 94, portionG: 150, unit: 'г', type: 'ingredient' },
+  { name: 'Картофель', calories: 77, proteinG: 2, fluidMl: 79, portionG: 200, unit: 'г', type: 'ingredient' },
+  { name: 'Яйцо куриное', calories: 143, proteinG: 12.6, fluidMl: 75, portionG: 55, unit: 'г', type: 'ingredient' },
+  { name: 'Молоко 2.5%', calories: 52, proteinG: 3, fluidMl: 100, portionG: 200, unit: 'г', type: 'liquid' },
+  { name: 'Творог 5%', calories: 121, proteinG: 17.2, fluidMl: 71, portionG: 150, unit: 'г', type: 'ingredient' },
+  { name: 'Овсянка (сухая)', calories: 342, proteinG: 12.3, fluidMl: 8, portionG: 50, unit: 'г', type: 'ingredient' },
+  { name: 'Морковь', calories: 41, proteinG: 0.9, fluidMl: 88, portionG: 100, unit: 'г', type: 'ingredient' },
+  { name: 'Лук репчатый', calories: 40, proteinG: 1.1, fluidMl: 89, portionG: 80, unit: 'г', type: 'ingredient' },
+  { name: 'Капуста белокочанная', calories: 25, proteinG: 1.3, fluidMl: 92, portionG: 150, unit: 'г', type: 'ingredient' },
+  { name: 'Масло подсолнечное', calories: 899, proteinG: 0, fluidMl: 0, portionG: 10, unit: 'г', type: 'ingredient' },
+  { name: 'Масло сливочное 82.5%', calories: 748, proteinG: 0.8, fluidMl: 16, portionG: 10, unit: 'г', type: 'ingredient' }
+];

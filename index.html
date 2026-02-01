@@ -333,12 +333,23 @@
       </div>
     </div>
 
-    <div class="card" style="margin-top:10px">
-      <div style="font-weight:900">Уведомления</div>
-      <div class="muted" style="margin-top:6px">Разрешить браузеру отправлять уведомления.</div>
-      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px">
-        <button class="btn secondary" id="btnToggleNotifications">Включить уведомления</button>
-      </div>
+    <div class="card" id="notificationsSection" style="margin-top:10px">
+      <details id="notificationsContent">
+        <summary class="section-header" style="font-weight:900; cursor:pointer; list-style:none; display:flex; justify-content:space-between; align-items:center">
+          <span>Уведомления</span>
+          <span class="muted" style="font-size:12px">▼</span>
+        </summary>
+        <div class="muted" style="margin-top:6px">Настройте локальные уведомления.</div>
+        
+        <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px">
+          <button class="btn secondary" id="btnAddNotification">+ Добавить уведомление</button>
+          <button class="btn secondary" id="btnToggleNotifications" style="display:none">Включить уведомления</button>
+        </div>
+
+        <div id="notificationsList" style="margin-top:10px">
+          <!-- Notification cards will be injected here -->
+        </div>
+      </details>
     </div>
 
     <div class="card" style="margin-top:10px; border:2px solid #dc2626; background:#fef2f2">
@@ -609,6 +620,6 @@
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
   <script src="sharingService.js?v=17.33"></script>
-  <script type="module" src="script.js?v=17.33"></script>
+  <script src="script.js?v=17.33"></script>
 </body>
 </html>

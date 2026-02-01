@@ -9,7 +9,7 @@ if ('serviceWorker' in navigator) {
 
 /* ---------- IndexedDB ---------- */
 const DBNAME = "food-plan-db";
-const DBVER = 8;
+const DBVER = 9;
 
 let statusTimer = null;
 
@@ -37,6 +37,7 @@ function openDb(){
       if(!db.objectStoreNames.contains("logs")) db.createObjectStore("logs", {keyPath:"date"});
       if(!db.objectStoreNames.contains("shopping")) db.createObjectStore("shopping", {keyPath:"id"});     
       if(!db.objectStoreNames.contains("meta")) db.createObjectStore("meta", {keyPath:"key"});
+      if(!db.objectStoreNames.contains("notifications")) db.createObjectStore("notifications", {keyPath:"id"});
 
       if(oldVer < 7){
         const tx = req.transaction;
@@ -1646,6 +1647,796 @@ function sortMaybeFav(list){
   
   return copy;
 }
+function notificationCardHtml(n) {
+  const nextTime = n.nextFiringTime ? fmtTimeHM(new Date(n.nextFiringTime)) : "Не запланировано";
+  
+  let triggerText = "Специальный";
+  if (n.triggerType === "time") {
+    const f = n.triggerConfig?.frequency;
+    const t = n.triggerConfig?.time || "??:??";
+    if (f === "everyday") triggerText = `Ежедневно @ ${t}`;
+    else if (f === "oneshot") triggerText = `Один раз @ ${t}`;
+    else if (f === "specific") {
+      const daysShort = ["", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
+      const days = (n.triggerConfig?.days || []).map(d => daysShort[d]).join(",");
+      triggerText = `${days} @ ${t}`;
+    }
+    else if (f === "interval") triggerText = `Каждые ${n.triggerConfig?.interval} мин`;
+    else if (f === "window") triggerText = `Каждые ${n.triggerConfig?.interval} мин с ${n.triggerConfig?.startTime} до ${n.triggerConfig?.endTime}`;
+  } else if (n.triggerType === "consumption") {
+    const mode = n.triggerConfig?.mode;
+    if (mode === "item") triggerText = `При логировании: ${escapeHtml(n.triggerConfig?.itemName || "Любой")}`;
+    else {
+      const catMap = { 
+        breakfast: "Завтрак", 
+        lunch: "Обед", 
+        dinner: "Ужин", 
+        treat: "Вкусняшки", 
+        snack: "Перекусы", 
+        activity: "Занятия" 
+      };
+      triggerText = `При логировании: ${catMap[n.triggerConfig?.category] || "Любой"}`;
+    }
+  } else if (n.triggerType === "macro") {
+    const metricMap = { water: "Вода", protein: "Белок", calories: "Калории", steps: "Шаги" };
+    const cond = n.triggerConfig?.condition === "less" ? "<" : ">";
+    triggerText = `${metricMap[n.triggerConfig?.metric]} ${cond} ${n.triggerConfig?.value} @ ${n.triggerConfig?.checkTime}`;
+  } else if (n.triggerType === "idle") {
+    triggerText = `Неактивность ${n.triggerConfig?.hours}ч (${n.triggerConfig?.startTime}-${n.triggerConfig?.endTime})`;
+  }
+  
+  return `
+    <div class="card" data-notification-id="${escapeHtml(n.id)}">
+      <div class="mealCardHead">
+        <div>
+          <div style="font-weight:900">${escapeHtml(n.name)}</div>
+          <div class="muted mealMeta">${escapeHtml(triggerText)}</div>
+          <div class="muted mealMeta" style="font-style: italic;">"${escapeHtml(n.message)}"</div>
+          <div class="muted mealMeta">След. срабатывание: ${escapeHtml(nextTime)}</div>
+        </div>
+      </div>
+      <div class="mealCardActions">
+        <label class="switch" style="margin-left: auto;">
+          <input type="checkbox" data-notification-toggle="${escapeHtml(n.id)}" ${n.enabled ? "checked" : ""}>
+          <span class="slider"></span>
+        </label>
+      </div>
+    </div>
+  `;
+}
+
+async function requestNotificationPermission() {
+  if (!("Notification" in window)) {
+    alert("Ваш браузер не поддерживает уведомления.");
+    return false;
+  }
+
+  if (Notification.permission === "granted") return true;
+
+  if (Notification.permission !== "denied") {
+    const permission = await Notification.requestPermission();
+    if (permission === "granted") return true;
+  }
+
+  alert("Уведомления заблокированы в настройках браузера. Пожалуйста, разрешите их для работы этой функции.");
+  return false;
+}
+
+function renderNotifications() {
+  const root = document.getElementById("notificationsList");
+  if (!root) return;
+  
+  const list = [...(window.notifications || [])].sort((a, b) => {
+    // Enabled first, then by nextFiringTime
+    if (a.enabled !== b.enabled) return b.enabled ? 1 : -1;
+    if (!a.nextFiringTime) return 1;
+    if (!b.nextFiringTime) return -1;
+    return a.nextFiringTime - b.nextFiringTime;
+  });
+
+  if (!list.length) {
+    root.innerHTML = `<div class="muted" style="text-align: center; padding: 20px;">У вас пока нет уведомлений.</div>`;
+    return;
+  }
+
+  root.innerHTML = list.map(notificationCardHtml).join("");
+
+  root.querySelectorAll("[data-notification-toggle]").forEach(toggle => {
+    toggle.addEventListener("change", (e) => {
+      const id = e.target.getAttribute("data-notification-toggle");
+      toggleNotification(id, e.target.checked);
+    });
+  });
+  
+  installLongPress(root, "[data-notification-id]", el => {
+    const id = el.getAttribute("data-notification-id");
+    return window.notifications?.find(n => n.id === id);
+  }, openNotificationEditModal);
+}
+
+async function saveNotification(notif) {
+  if (!notif.id) notif.id = "notif_" + Date.now();
+  notif.updatedAt = new Date().toISOString();
+  
+  if (notif.enabled) {
+    const ok = await requestNotificationPermission();
+    if (!ok) notif.enabled = false;
+    notif.nextFiringTime = calculateNextFiringTime(notif);
+  } else {
+    notif.nextFiringTime = 0;
+  }
+
+  await txPut("notifications", notif);
+  await loadNotifications();
+  renderNotifications();
+}
+
+function getLastEntryTime() {
+  const allEntries = [
+    ...(window.todayMealEntries || []).map(e => new Date(e.createdAt).getTime()),
+    ...(window.todayActivityEntries || []).map(e => new Date(e.createdAt).getTime())
+  ];
+  if (allEntries.length === 0) return 0;
+  return Math.max(...allEntries);
+}
+
+function calculateNextFiringTime(n) {
+  if (!n.enabled) return 0;
+  const now = new Date();
+  
+  if (n.triggerType === "time") {
+    const freq = n.triggerConfig?.frequency;
+    
+    if (freq === "oneshot" || freq === "everyday" || freq === "specific") {
+      const [hh, mm] = (n.triggerConfig?.time || "09:00").split(":").map(Number);
+      let target = new Date();
+      target.setHours(hh, mm, 0, 0);
+      
+      if (freq === "oneshot") {
+        return target.getTime() > now.getTime() ? target.getTime() : 0;
+      }
+      
+      if (freq === "everyday") {
+        if (target.getTime() <= now.getTime()) {
+          target.setDate(target.getDate() + 1);
+        }
+        return target.getTime();
+      }
+      
+      if (freq === "specific") {
+        const allowedDays = n.triggerConfig?.days || []; // 1=Mon, 7=Sun
+        if (allowedDays.length === 0) return 0;
+        
+        // Find next allowed day
+        for (let i = 0; i < 8; i++) {
+          let check = new Date(target.getTime());
+          check.setDate(check.getDate() + i);
+          let day = check.getDay(); // 0=Sun, 1=Mon
+          let dayId = day === 0 ? 7 : day;
+          
+          if (allowedDays.includes(dayId)) {
+            if (check.getTime() > now.getTime()) return check.getTime();
+          }
+        }
+        return 0;
+      }
+    }
+
+    if (freq === "interval" || freq === "window") {
+      const minutes = n.triggerConfig?.interval || 60;
+      let target = new Date(now.getTime() + minutes * 60000);
+      
+      if (freq === "window") {
+        const [sh, sm] = (n.triggerConfig?.startTime || "09:00").split(":").map(Number);
+        const [eh, em] = (n.triggerConfig?.endTime || "21:00").split(":").map(Number);
+        
+        const start = new Date(); start.setHours(sh, sm, 0, 0);
+        const end = new Date(); end.setHours(eh, em, 0, 0);
+        
+        // If window ended today, jump to tomorrow's start
+        if (now.getTime() >= end.getTime()) {
+          start.setDate(start.getDate() + 1);
+          return start.getTime();
+        }
+        // If currently before window, start at window opening
+        if (now.getTime() < start.getTime()) {
+          return start.getTime();
+        }
+        // If within window, ensure target doesn't overshoot window end
+        if (target.getTime() > end.getTime()) {
+          start.setDate(start.getDate() + 1);
+          return start.getTime();
+        }
+      }
+      return target.getTime();
+    }
+  }
+
+  if (n.triggerType === "macro" || n.triggerType === "idle") {
+    if (n.triggerType === "macro") {
+      const [hh, mm] = (n.triggerConfig?.checkTime || "22:00").split(":").map(Number);
+      let target = new Date();
+      target.setHours(hh, mm, 0, 0);
+      if (target.getTime() <= now.getTime()) target.setDate(target.getDate() + 1);
+      return target.getTime();
+    }
+    if (n.triggerType === "idle") {
+      const idleMs = (n.triggerConfig?.hours || 4) * 3600000;
+      const [sh, sm] = (n.triggerConfig?.startTime || "10:00").split(":").map(Number);
+      const [eh, em] = (n.triggerConfig?.endTime || "18:00").split(":").map(Number);
+      
+      let start = new Date(); start.setHours(sh, sm, 0, 0);
+      let end = new Date(); end.setHours(eh, em, 0, 0);
+      
+      // If we are past today's window, look at tomorrow
+      if (now.getTime() >= end.getTime()) {
+        start.setDate(start.getDate() + 1);
+        return start.getTime() + idleMs;
+      }
+
+      const lastEntry = getLastEntryTime();
+      // Effective start is the later of (Window Start) or (Last Entry)
+      const effectiveStart = Math.max(start.getTime(), lastEntry);
+      const target = effectiveStart + idleMs;
+
+      // If target is within current window and in the future, return it
+      if (target > now.getTime() && target <= end.getTime()) {
+        return target;
+      }
+      // If target passed end of window, next one is tomorrow
+      if (target > end.getTime()) {
+        start.setDate(start.getDate() + 1);
+        return start.getTime() + idleMs;
+      }
+      // If target is in the past (user is already idle), fire "now" (plus small buffer)
+      return now.getTime() + 1000;
+    }
+  }
+
+  if (n.triggerType === "consumption") {
+    return 0; // Consumption notifications trigger on event, not time
+  }
+
+  return 0;
+}
+
+async function rescheduleDynamicTriggers() {
+  if (!window.notifications) return;
+  let changed = false;
+  for (const n of window.notifications) {
+    if (!n.enabled) continue;
+    if (n.triggerType === "idle" || n.triggerType === "macro") {
+      const next = calculateNextFiringTime(n);
+      if (next !== n.nextFiringTime) {
+        n.nextFiringTime = next;
+        await txPut("notifications", n);
+        changed = true;
+      }
+    }
+  }
+  if (changed) renderNotifications();
+}
+
+function evaluateEventTriggers(type, itemId, category) {
+  if (!window.notifications) return;
+  
+  try {
+    window.notifications.forEach(n => {
+      if (!n.enabled || n.triggerType !== "consumption") return;
+      
+      const config = n.triggerConfig;
+      if (config.mode === "item") {
+        if (config.itemId === itemId) fireNotification(n);
+      } else if (config.mode === "category") {
+        if (config.category === category) fireNotification(n);
+      }
+    });
+  } catch (err) {
+    console.error("evaluateEventTriggers failed", err);
+  }
+}
+
+async function evaluateAllTriggers() {
+  if (!window.notifications) return;
+  const now = Date.now();
+  
+  try {
+    for (const n of window.notifications) {
+      if (!n.enabled || !n.nextFiringTime) continue;
+      
+      if (now >= n.nextFiringTime) {
+        let shouldFire = true;
+        
+        if (n.triggerType === "macro") {
+          let val = 0;
+          if (n.triggerConfig.metric === "steps") {
+            val = safeNum(document.getElementById("dashSteps")?.value);
+          } else if (n.triggerConfig.metric === "water") {
+            val = calcWaterTotalMl();
+          } else if (n.triggerConfig.metric === "protein") {
+            val = calcEatProteinG();
+          } else if (n.triggerConfig.metric === "calories") {
+            val = (window.todayMealEntries || []).reduce((acc, e) => acc + (e.mealSnapshot?.calories || 0) * (e.amount / 100), 0);
+          }
+          
+          const target = n.triggerConfig.value;
+          if (n.triggerConfig.condition === "less") shouldFire = val < target;
+          else shouldFire = val > target;
+        } else if (n.triggerType === "idle") {
+          const lastEntry = getLastEntryTime();
+          const idleMs = (n.triggerConfig.hours || 4) * 3600000;
+          shouldFire = (now - lastEntry) >= idleMs;
+        }
+
+        if (shouldFire) {
+          fireNotification(n);
+          
+          if (n.triggerConfig?.frequency === "oneshot") {
+            n.enabled = false;
+            n.nextFiringTime = 0;
+          } else {
+            n.nextFiringTime = calculateNextFiringTime(n);
+          }
+          await txPut("notifications", n);
+        } else {
+          n.nextFiringTime = calculateNextFiringTime(n);
+          await txPut("notifications", n);
+        }
+      }
+    }
+    renderNotifications();
+  } catch (err) {
+    console.error("evaluateAllTriggers failed", err);
+  }
+}
+
+async function fireNotification(n) {
+  console.log("Firing notification:", n.name);
+  
+  // Add small delay to ensure previous modals (like classification) are fully closed
+  setTimeout(async () => {
+    const body = `<div>${escapeHtml(n.message)}</div>`;
+    const onOk = async () => {
+      // 1. Tell SW to close the system notification
+      if (navigator.serviceWorker.controller) {
+        navigator.serviceWorker.controller.postMessage({
+          type: 'DISMISS_NOTIFICATION',
+          tag: n.id
+        });
+      }
+      
+      if (document.getElementById("secondaryModalBack").style.display === "block") {
+        closeSecondaryModal();
+      } else {
+        closeModal();
+      }
+    };
+
+    // 2. Show in-app modal
+    if (document.body.classList.contains("modalOpen")) {
+      openSecondaryModal(n.name, body, "OK", onOk, true);
+    } else {
+      openModal(n.name, body, "OK", false, onOk, null, null, null, true);
+    }
+  }, 200);
+
+  // 3. Show system notification
+  if (!("Notification" in window)) return;
+  if (Notification.permission === "granted") {
+    const reg = await navigator.serviceWorker.getRegistration();
+    if (reg) {
+      reg.showNotification(n.name, {
+        body: n.message,
+        icon: "icon-192.png",
+        tag: n.id,
+        renotify: true
+      });
+    } else {
+      new Notification(n.name, {
+        body: n.message,
+        icon: "icon-192.png",
+        tag: n.id
+      });
+    }
+  }
+}
+
+async function deleteNotification(id) {
+  if (!id) return;
+  await txDelete("notifications", id);
+  await loadNotifications();
+  renderNotifications();
+}
+
+async function loadNotifications() {
+  window.notifications = await txGetAll("notifications");
+}
+
+async function toggleNotification(id, enabled) {
+  const notif = window.notifications.find(n => n.id === id);
+  if (!notif) return;
+
+  notif.enabled = enabled; // Set state first!
+
+  if (enabled) {
+    const ok = await requestNotificationPermission();
+    if (!ok) {
+      notif.enabled = false;
+      renderNotifications(); // Revert UI
+      return;
+    }
+    notif.nextFiringTime = calculateNextFiringTime(notif);
+  } else {
+    notif.nextFiringTime = 0;
+  }
+
+  notif.updatedAt = new Date().toISOString();
+  await txPut("notifications", notif);
+  renderNotifications();
+}
+
+/**
+ * Listens for messages from Service Worker (e.g. notification clicks)
+ */
+function wireSWMessages() {
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.addEventListener('message', (event) => {
+      const data = event.data;
+      if (data && data.type === 'NOTIFICATION_CLICKED') {
+        const notif = window.notifications?.find(n => n.id === data.notificationId);
+        if (notif) fireNotification(notif);
+      }
+    });
+  }
+}
+
+function openNotificationEditModal(notif = null) {
+  const isNew = !notif;
+  const title = isNew ? "Новое уведомление" : "Изменить уведомление";
+  
+  const name = notif?.name || "";
+  const message = notif?.message || "";
+  const triggerType = notif?.triggerType || "time";
+  
+  const bodyHtml = `
+    <div class="card">
+      <div class="muted">Название</div>
+      <input type="text" id="notifName" value="${escapeHtml(name)}" placeholder="Напр. Вода" style="width:100%; box-sizing:border-box">
+      
+      <div class="muted" style="margin-top:10px">Текст уведомления</div>
+      <input type="text" id="notifMessage" value="${escapeHtml(message)}" placeholder="Напр. Пора выпить воды" style="width:100%; box-sizing:border-box">
+      
+      <div class="muted" style="margin-top:10px">Тип триггера</div>
+      <select id="notifTriggerType" style="width:100%">
+        <option value="time" ${triggerType === "time" ? "selected" : ""}>По времени</option>
+        <option value="consumption" ${triggerType === "consumption" ? "selected" : ""}>При логировании</option>
+        <option value="macro" ${triggerType === "macro" ? "selected" : ""}>Макро-цели / Шаги</option>
+        <option value="idle" ${triggerType === "idle" ? "selected" : ""}>Неактивность</option>
+      </select>
+      
+      <div id="notifTriggerConfig" style="margin-top:10px">
+        <!-- Conditional fields will be injected here -->
+      </div>
+    </div>
+  `;
+
+  openModal(title, bodyHtml, "Сохранить", !isNew, async () => {
+    const nameVal = document.getElementById("notifName").value.trim();
+    const msgVal = document.getElementById("notifMessage").value.trim();
+    const typeVal = document.getElementById("notifTriggerType").value;
+    
+    if (!nameVal) {
+      alert("Введите название");
+      return false; // Keep modal open
+    }
+
+    const newNotif = {
+      ...notif,
+      name: nameVal,
+      message: msgVal,
+      triggerType: typeVal,
+      enabled: notif ? notif.enabled : true,
+      triggerConfig: {}
+    };
+
+    if (typeVal === "time") {
+      newNotif.triggerConfig = {
+        time: document.getElementById("notifTime").value,
+        frequency: document.getElementById("notifFreq").value
+      };
+      if (newNotif.triggerConfig.frequency === "specific") {
+        const days = [];
+        document.querySelectorAll("#notifDayPicker .day-btn.active").forEach(btn => {
+          days.push(parseInt(btn.getAttribute("data-day")));
+        });
+        newNotif.triggerConfig.days = days;
+      }
+      if (newNotif.triggerConfig.frequency === "interval" || newNotif.triggerConfig.frequency === "window") {
+        newNotif.triggerConfig.interval = parseInt(document.getElementById("notifInterval").value);
+      }
+      if (newNotif.triggerConfig.frequency === "window") {
+        newNotif.triggerConfig.startTime = document.getElementById("notifStartTime").value;
+        newNotif.triggerConfig.endTime = document.getElementById("notifEndTime").value;
+      }
+    } else if (typeVal === "consumption") {
+      const mode = document.getElementById("notifConsumptionMode").value;
+      newNotif.triggerConfig = {
+        mode: mode
+      };
+      if (mode === "item") {
+        newNotif.triggerConfig.itemId = document.getElementById("notifItemId").value;
+        newNotif.triggerConfig.itemName = document.getElementById("notifSelectedItemName").textContent;
+      } else {
+        newNotif.triggerConfig.category = document.getElementById("notifCategory").value;
+      }
+    } else if (typeVal === "macro") {
+      newNotif.triggerConfig = {
+        metric: document.getElementById("notifMetric").value,
+        condition: document.getElementById("notifCondition").value,
+        value: parseFloat(document.getElementById("notifMetricValue").value),
+        checkTime: document.getElementById("notifCheckTime").value
+      };
+    } else if (typeVal === "idle") {
+      newNotif.triggerConfig = {
+        hours: parseFloat(document.getElementById("notifIdleHours").value),
+        startTime: document.getElementById("notifIdleStart").value,
+        endTime: document.getElementById("notifIdleEnd").value
+      };
+    }
+
+    await saveNotification(newNotif);
+    // Success - return true (or nothing) to close
+  }, async () => {
+    await deleteNotification(notif.id);
+    // wireModalButtons handles confirmation and closeModal
+  });
+
+  // Handle trigger type changes
+  const typeSelect = document.getElementById("notifTriggerType");
+  const configDiv = document.getElementById("notifTriggerConfig");
+
+  const updateConfigUI = (type) => {
+    if (type === "time") {
+      const time = notif?.triggerConfig?.time || "09:00";
+      const freq = notif?.triggerConfig?.frequency || "everyday";
+      const days = notif?.triggerConfig?.days || [1,2,3,4,5,6,7]; // 1=Mon, 7=Sun
+      const interval = notif?.triggerConfig?.interval || 60; // in minutes
+      const startTime = notif?.triggerConfig?.startTime || "09:00";
+      const endTime = notif?.triggerConfig?.endTime || "21:00";
+      
+      configDiv.innerHTML = `
+        <div id="notifTimeCont" style="display: ${freq === "everyday" || freq === "oneshot" || freq === "specific" ? "block" : "none"}">
+          <div class="muted">Время</div>
+          <input type="time" id="notifTime" value="${escapeHtml(time)}" style="width:100%">
+        </div>
+        
+        <div class="muted" style="margin-top:10px">Частота</div>
+        <select id="notifFreq" style="width:100%">
+          <option value="everyday" ${freq === "everyday" ? "selected" : ""}>Ежедневно</option>
+          <option value="oneshot" ${freq === "oneshot" ? "selected" : ""}>Один раз</option>
+          <option value="specific" ${freq === "specific" ? "selected" : ""}>Выбранные дни</option>
+          <option value="interval" ${freq === "interval" ? "selected" : ""}>Интервал (каждые X мин)</option>
+          <option value="window" ${freq === "window" ? "selected" : ""}>Интервал в окне</option>
+        </select>
+        
+        <div id="notifIntervalCont" style="display: ${freq === "interval" || freq === "window" ? "block" : "none"}; margin-top:10px">
+          <div class="muted">Интервал (минуты)</div>
+          <input type="number" id="notifInterval" value="${interval}" min="1" step="1" style="width:100%">
+        </div>
+
+        <div id="notifWindowCont" style="display: ${freq === "window" ? "block" : "none"}; margin-top:10px">
+          <div class="grid2">
+            <div>
+              <div class="muted">Начало</div>
+              <input type="time" id="notifStartTime" value="${escapeHtml(startTime)}" style="width:100%">
+            </div>
+            <div>
+              <div class="muted">Конец</div>
+              <input type="time" id="notifEndTime" value="${escapeHtml(endTime)}" style="width:100%">
+            </div>
+          </div>
+        </div>
+
+        <div id="notifDayPickerCont" style="display: ${freq === "specific" ? "block" : "none"}">
+          <div class="muted" style="margin-top:10px">Дни недели</div>
+          <div class="day-picker" id="notifDayPicker">
+            ${renderDayPicker(days)}
+          </div>
+        </div>
+      `;
+      
+      const freqSelect = document.getElementById("notifFreq");
+      const timeCont = document.getElementById("notifTimeCont");
+      const intervalCont = document.getElementById("notifIntervalCont");
+      const windowCont = document.getElementById("notifWindowCont");
+      const dayCont = document.getElementById("notifDayPickerCont");
+
+      freqSelect.addEventListener("change", (e) => {
+        const val = e.target.value;
+        timeCont.style.display = (val === "everyday" || val === "oneshot" || val === "specific") ? "block" : "none";
+        intervalCont.style.display = (val === "interval" || val === "window") ? "block" : "none";
+        windowCont.style.display = val === "window" ? "block" : "none";
+        dayCont.style.display = val === "specific" ? "block" : "none";
+      });
+
+      // Wire up day buttons
+      document.getElementById("notifDayPicker").addEventListener("click", (e) => {
+        const btn = e.target.closest(".day-btn");
+        if (btn) btn.classList.toggle("active");
+      });
+
+    } else if (type === "consumption") {
+      const mode = notif?.triggerConfig?.mode || "item"; // "item" or "category"
+      const itemName = notif?.triggerConfig?.itemName || "";
+      const itemId = notif?.triggerConfig?.itemId || "";
+      const category = notif?.triggerConfig?.category || "breakfast";
+      
+      configDiv.innerHTML = `
+        <div class="muted">Тип события</div>
+        <select id="notifConsumptionMode" style="width:100%">
+          <option value="item" ${mode === "item" ? "selected" : ""}>Конкретный элемент</option>
+          <option value="category" ${mode === "category" ? "selected" : ""}>Любая категория</option>
+        </select>
+
+        <div id="notifItemPickerCont" style="display: ${mode === "item" ? "block" : "none"}; margin-top:10px">
+          <div class="muted">Поиск блюда или активности</div>
+          ${renderSearchInput("notifItemSearch", "Поиск...")}
+          <div id="notifSearchResults" style="max-height: 150px; overflow-y: auto; margin-top: 5px; border: 1px solid #ddd; border-radius: 8px; display: none;">
+            <!-- Search results will be injected here -->
+          </div>
+          <div id="notifSelectedItem" class="muted" style="margin-top: 5px; font-weight: 900; color: #19a34a;">
+            Выбрано: <span id="notifSelectedItemName">${escapeHtml(itemName || "Ничего")}</span>
+            <input type="hidden" id="notifItemId" value="${escapeHtml(itemId)}">
+          </div>
+        </div>
+
+        <div id="notifCategoryPickerCont" style="display: ${mode === "category" ? "block" : "none"}; margin-top:10px">
+          <div class="muted">Выберите категорию</div>
+          <select id="notifCategory" style="width:100%">
+            <option value="breakfast" ${category === "breakfast" ? "selected" : ""}>Завтрак</option>
+            <option value="lunch" ${category === "lunch" ? "selected" : ""}>Обед</option>
+            <option value="dinner" ${category === "dinner" ? "selected" : ""}>Ужин</option>
+            <option value="treat" ${category === "treat" ? "selected" : ""}>Вкусняшки</option>
+            <option value="snack" ${category === "snack" ? "selected" : ""}>Перекусы</option>
+            <option value="activity" ${category === "activity" ? "selected" : ""}>Занятия</option>
+          </select>
+        </div>
+      `;
+
+      const modeSelect = document.getElementById("notifConsumptionMode");
+      const itemCont = document.getElementById("notifItemPickerCont");
+      const catCont = document.getElementById("notifCategoryPickerCont");
+      
+      modeSelect.addEventListener("change", (e) => {
+        const val = e.target.value;
+        itemCont.style.display = val === "item" ? "block" : "none";
+        catCont.style.display = val === "category" ? "block" : "none";
+      });
+
+      // Inline search logic
+      const searchInput = document.getElementById("notifItemSearch");
+      const resultsDiv = document.getElementById("notifSearchResults");
+      const selectedNameSpan = document.getElementById("notifSelectedItemName");
+      const selectedIdInput = document.getElementById("notifItemId");
+
+      searchInput.addEventListener("focus", () => {
+        searchInput.style.scrollMarginTop = "20px";
+        searchInput.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+
+      searchInput.addEventListener("input", () => {
+        const query = searchInput.value.toLowerCase().trim();
+        if (!query) {
+          resultsDiv.style.display = "none";
+          return;
+        }
+
+        const items = [
+          ...(window.meals || []).map(m => ({ id: m.id, name: m.name, type: "meal" })),
+          ...(window.activities || []).map(a => ({ id: a.id, name: a.name, type: "activity" }))
+        ].filter(x => x.name.toLowerCase().includes(query)).slice(0, 20);
+
+        if (items.length > 0) {
+          resultsDiv.innerHTML = items.map(item => `
+            <div class="search-result-item" data-id="${escapeHtml(item.id)}" data-name="${escapeHtml(item.name)}" 
+                 style="padding: 8px; cursor: pointer; border-bottom: 1px solid #eee; font-size: 14px;">
+              ${escapeHtml(item.name)} <span class="muted" style="font-size: 11px;">(${item.type === "meal" ? "блюдо" : "активность"})</span>
+            </div>
+          `).join("");
+          resultsDiv.style.display = "block";
+        } else {
+          resultsDiv.innerHTML = `<div class="muted" style="padding: 8px;">Ничего не найдено</div>`;
+          resultsDiv.style.display = "block";
+        }
+      });
+
+      resultsDiv.addEventListener("click", (e) => {
+        const row = e.target.closest(".search-result-item");
+        if (row) {
+          const id = row.getAttribute("data-id");
+          const name = row.getAttribute("data-name");
+          selectedIdInput.value = id;
+          selectedNameSpan.textContent = name;
+          resultsDiv.style.display = "none";
+          searchInput.value = "";
+        }
+      });
+    } else if (type === "macro") {
+      const metric = notif?.triggerConfig?.metric || "water";
+      const condition = notif?.triggerConfig?.condition || "less";
+      const value = notif?.triggerConfig?.value || 1000;
+      const checkTime = notif?.triggerConfig?.checkTime || "14:00";
+
+      configDiv.innerHTML = `
+        <div class="muted">Показатель</div>
+        <select id="notifMetric" style="width:100%">
+          <option value="water" ${metric === "water" ? "selected" : ""}>Вода (мл)</option>
+          <option value="protein" ${metric === "protein" ? "selected" : ""}>Белок (г)</option>
+          <option value="calories" ${metric === "calories" ? "selected" : ""}>Калории (ккал)</option>
+          <option value="steps" ${metric === "steps" ? "selected" : ""}>Шаги</option>
+        </select>
+
+        <div class="grid2" style="margin-top:10px">
+          <div>
+            <div class="muted">Условие</div>
+            <select id="notifCondition" style="width:100%">
+              <option value="less" ${condition === "less" ? "selected" : ""}>Меньше (<)</option>
+              <option value="more" ${condition === "more" ? "selected" : ""}>Больше (>)</option>
+            </select>
+          </div>
+          <div>
+            <div class="muted">Значение</div>
+            <input type="number" id="notifMetricValue" value="${value}" style="width:100%">
+          </div>
+        </div>
+
+        <div class="muted" style="margin-top:10px">Время проверки</div>
+        <input type="time" id="notifCheckTime" value="${escapeHtml(checkTime)}" style="width:100%">
+        <div class="muted" style="font-size:11px; margin-top:4px">Уведомление сработает в это время, если условие выполнено.</div>
+      `;
+    } else if (type === "idle") {
+      const hours = notif?.triggerConfig?.hours || 4;
+      const start = notif?.triggerConfig?.startTime || "10:00";
+      const end = notif?.triggerConfig?.endTime || "18:00";
+
+      configDiv.innerHTML = `
+        <div class="muted">Период неактивности (часы)</div>
+        <input type="number" id="notifIdleHours" value="${hours}" min="1" step="0.5" style="width:100%">
+        
+        <div class="grid2" style="margin-top:10px">
+          <div>
+            <div class="muted">С</div>
+            <input type="time" id="notifIdleStart" value="${escapeHtml(start)}" style="width:100%">
+          </div>
+          <div>
+            <div class="muted">До</div>
+            <input type="time" id="notifIdleEnd" value="${escapeHtml(end)}" style="width:100%">
+          </div>
+        </div>
+        <div class="muted" style="font-size:11px; margin-top:4px">Сработает, если за указанное время не было записей в журнале.</div>
+      `;
+    }
+  };
+
+  typeSelect.addEventListener("change", (e) => updateConfigUI(e.target.value));
+  updateConfigUI(triggerType);
+}
+
+function renderDayPicker(activeDays = []) {
+  const days = [
+    { id: 1, label: "П" },
+    { id: 2, label: "В" },
+    { id: 3, label: "С" },
+    { id: 4, label: "Ч" },
+    { id: 5, label: "П" },
+    { id: 6, label: "С" },
+    { id: 7, label: "В" }
+  ];
+  return days.map(d => `
+    <div class="day-btn ${activeDays.includes(d.id) ? "active" : ""}" data-day="${d.id}">${d.label}</div>
+  `).join("");
+}
+
 function mealCardHtml(m){
   const star = window.favoritesEnabled
     ? `<button class="btn secondary tiny" data-fav-meal="${escapeHtml(m.id)}" title="Избранное" style="padding:4px 8px">${m.favorite ? "★" : "☆"}</button>`
@@ -2135,16 +2926,21 @@ function switchTab(tabId) {
   syncUI(history.state);
   
   // Reset scroll and dashboard state on tab switch
-  window.scrollTo(0, 0);
+  if (typeof window.scrollTo === "function") {
+    window.scrollTo(0, 0);
+  }
 }
 window.switchTab = switchTab;
 
-function openModal(title, bodyHtml, okText="OK", showDelete=false, onOk=null, onDelete=null, onExport=null, score = null){
+function openModal(title, bodyHtml, okText="OK", showDelete=false, onOk=null, onDelete=null, onExport=null, score = null, hideCancel = false){
   pushModalState("generalModal");
 
   document.getElementById("modalTitle").textContent = title;
   document.getElementById("modalBody").innerHTML = bodyHtml;
   document.getElementById("modalOk").textContent = okText;
+  
+  const cancelBtn = document.getElementById("modalCancel");
+  if (cancelBtn) cancelBtn.style.display = hideCancel ? "none" : "inline-block";
 
   renderHeaderScore(score);
 
@@ -2160,12 +2956,15 @@ function openModal(title, bodyHtml, okText="OK", showDelete=false, onOk=null, on
   document.body.classList.add("modalOpen");
   document.getElementById("modalBack").style.display = "block";
 }
-function openSecondaryModal(title, bodyHtml, okText="OK", onOk=null){
+function openSecondaryModal(title, bodyHtml, okText="OK", onOk=null, hideCancel = false){
   pushModalState("secondaryModal");
   
   document.getElementById("secondaryModalTitle").textContent = title;
   document.getElementById("secondaryModalBody").innerHTML = bodyHtml;
   document.getElementById("secondaryModalOk").textContent = okText;
+  
+  const cancelBtn = document.getElementById("secondaryModalCancel");
+  if (cancelBtn) cancelBtn.style.display = hideCancel ? "none" : "inline-block";
   
   secondaryModalOnOk = onOk;
   window.secondaryModalOnOk = onOk;
@@ -2867,6 +3666,8 @@ async function renderLogs(){
 }
 
 async function loadSettings(){
+  renderNotifications();
+
   const h = await metaGet("settings.height");
   const a = await metaGet("settings.age");
   const sex = await metaGet("settings.sex");
@@ -3076,11 +3877,72 @@ async function requestPersist(){
 }
 
 function seedActivitiesIfEmpty(arr){
-  if(arr.length) return arr;
-  return [
-    {id:"a1",name:"Степпер",kcalPerHour:500,favorite:false},
-    {id:"a2",name:"Ходьба",kcalPerHour:250,favorite:false}
+  const generic = [
+    { id: 'g-steps', name: 'Шаги (1000)', calories: 40, type: 'activity', usageScore: 0, favorite: false },
+    { id: 'g-walking', name: 'Ходьба (30 мин)', calories: 120, type: 'activity', usageScore: 0, favorite: false },
+    { id: 'g-running', name: 'Бег (30 мин)', calories: 300, type: 'activity', usageScore: 0, favorite: false },
+    { id: 'g-cycling', name: 'Велосипед (30 мин)', calories: 200, type: 'activity', usageScore: 0, favorite: false },
+    { id: 'g-swimming', name: 'Плавание (30 мин)', calories: 250, type: 'activity', usageScore: 0, favorite: false },
+    { id: 'g-gym', name: 'Силовая (1 час)', calories: 250, type: 'activity', usageScore: 0, favorite: false }
   ];
+  
+  const existingIds = new Set(arr.map(m => m.id));
+  const newItems = generic
+    .filter(g => !existingIds.has(g.id))
+    .map(m => ({...m, favorite: false, updatedAt: new Date().toISOString()}));
+  
+  return [...arr, ...newItems];
+}
+
+function seedNotificationsIfEmpty(arr) {
+  if (arr.length > 0) return arr;
+
+  const defaults = [
+    {
+      id: "def-water",
+      name: "Водный баланс",
+      message: "Пора выпить стакан воды!",
+      enabled: true,
+      triggerType: "time",
+      triggerConfig: {
+        frequency: "window",
+        interval: 90,
+        startTime: "09:00",
+        endTime: "21:00"
+      }
+    },
+    {
+      id: "def-idle",
+      name: "Забыли записать?",
+      message: "Вы ничего не вводили уже 4 часа.",
+      enabled: true,
+      triggerType: "idle",
+      triggerConfig: {
+        hours: 4,
+        startTime: "10:00",
+        endTime: "18:00"
+      }
+    },
+    {
+      id: "def-steps",
+      name: "Норма шагов",
+      message: "Не забудьте ввести шаги за сегодня!",
+      enabled: true,
+      triggerType: "macro",
+      triggerConfig: {
+        metric: "steps",
+        condition: "less",
+        value: 1,
+        checkTime: "22:00"
+      }
+    }
+  ];
+
+  return defaults.map(n => ({
+    ...n,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  }));
 }
 
 function addMealToToday(mealId, amount, customSnapshot, categoryOverride){
@@ -3095,6 +3957,8 @@ function addMealToToday(mealId, amount, customSnapshot, categoryOverride){
     amount: amount || snap.portionG || 100,
     createdAt: new Date().toISOString()
   });
+  rescheduleDynamicTriggers();
+  setTimeout(() => evaluateEventTriggers("meal", mealId, snap.category), 100);
 }
 
 let currentPortionMealId = null;
@@ -4926,6 +5790,8 @@ function wireGlobalClicks(){
 
       const promise = incrementUsageScore(id);
       window.todayActivityEntries.push({id, minutes, activitySnapshot: buildActivitySnapshot(window.activities.find(x => x.id === id)), createdAt: new Date().toISOString()});
+      rescheduleDynamicTriggers();
+      setTimeout(() => evaluateEventTriggers("activity", id, "activity"), 100);
       if(kcalEl) kcalEl.value = "";
       if(minEl) minEl.value = "";
       
@@ -5042,6 +5908,7 @@ async function wireActions(){
   });
 
   document.getElementById("btnSaveSettings")?.addEventListener("click", saveSettings);
+  document.getElementById("btnAddNotification")?.addEventListener("click", () => openNotificationEditModal());
   document.getElementById("btnPersist")?.addEventListener("click", requestPersist);
   document.getElementById("btnExport")?.addEventListener("click", exportBackupNow);
   document.getElementById("btnImport")?.addEventListener("click", () => {
@@ -5295,6 +6162,15 @@ async function loadAll(){
   }
 
   window.activities = seedActivitiesIfEmpty(await txGetAll("activities"));
+  
+  const allNotifs = await txGetAll("notifications");
+  window.notifications = seedNotificationsIfEmpty(allNotifs);
+  if (window.notifications.length > allNotifs.length) {
+    for (const n of window.notifications) {
+      if (!allNotifs.find(x => x.id === n.id)) await txPut("notifications", n);
+    }
+  }
+
   await loadSettings();
   await loadShopping();
   await migrateLegacyDraftOnce();
@@ -5422,22 +6298,28 @@ function wireTabsAndEditors(){
       wireShareModal();
       wireImportModal();
       wireLaunchQueue();
-      wireFab();  wireModalButtons();
-  wireBarcodeSearch();
-  wireAddButtons();
-  wireDraftInputs();
-  wireGlobalClicks();
-  wireActivityInputs();
-  wireAutoSelect();
-  wireAutoScrollSearch();
-        wireHeaderScore();
-        wireRecipeScore();
-        wireNotifications();
-        await wireActions();
-        await loadAll();
-        await checkUrlForSharedRecipe();
-      }
-      window.main = main;
+      wireFab();
+      wireModalButtons();
+      wireBarcodeSearch();
+      wireAddButtons();
+      wireDraftInputs();
+      wireGlobalClicks();
+      wireActivityInputs();
+      wireAutoSelect();
+      wireAutoScrollSearch();
+      wireHeaderScore();
+      wireRecipeScore();
+      wireNotifications();
+      wireSWMessages();
+      await wireActions();
+      await loadAll();
+      await checkUrlForSharedRecipe();
+
+      // Notification background loop (every 1 minute)
+      setInterval(() => evaluateAllTriggers(), 60000);
+      evaluateAllTriggers(); 
+    }
+    window.main = main;
 function wireHeaderScore() {
   const container = document.getElementById("modalScoreContainer");
   if (!container) return;
