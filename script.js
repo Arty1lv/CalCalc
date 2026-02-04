@@ -2726,19 +2726,29 @@ let modalOnDelete = null;
 let modalOnExport = null;
 let secondaryModalOnOk = null;
 window.modalCurrentScore = 0;
+window.recipeCurrentScore = 0;
 
 function renderHeaderScore(score, containerId = "modalScoreContainer") {
   const container = document.getElementById(containerId);
   if (!container) return;
   
+  // If score is null/undefined, it means we are in a sub-modal or a modal that
+  // doesn't have a rating (e.g. notifications). In this case, we hide the score 
+  // container but we MUST NOT reset the global score because we might 
+  // be preserving the score of a parent modal (e.g., Recipe Builder -> Add Ingredient).
   if (score === null || score === undefined) {
     container.innerHTML = "";
-    if (containerId === "modalScoreContainer") window.modalCurrentScore = 0;
     return;
   }
 
-  const val = Number(score);
-  if (containerId === "modalScoreContainer") window.modalCurrentScore = val;
+  const val = safeNum(score);
+  // Update the correct global state based on the container being used
+  if (containerId === "recipeScoreContainer") {
+    window.recipeCurrentScore = val;
+  } else {
+    window.modalCurrentScore = val;
+  }
+
   const displayVal = val.toFixed(1);
   container.innerHTML = `${displayVal} ★`;
 }
@@ -3422,7 +3432,7 @@ function getMealFromForm(root = document){
     proteinG: Number(root.querySelector("#mProtein100")?.value || 0),
     fluidMl: Number(root.querySelector("#mFluid100")?.value || 0),
     short: root.querySelector("#mShort")?.value.trim(),
-    usageScore: safeNum(window.modalCurrentScore),
+    usageScore: parseFloat(safeNum(window.modalCurrentScore).toFixed(2)),
     updatedAt: new Date().toISOString()
   };
 
@@ -4084,8 +4094,8 @@ function updatePortionModalNutrients(source){
   }
   
   document.getElementById("portionKcal").textContent = Math.round(scaled.calories);
-  document.getElementById("portionProtein").textContent = scaled.proteinG.toFixed(1);
-  document.getElementById("portionFluid").textContent = scaled.fluidMl.toFixed(1);
+  document.getElementById("portionProtein").textContent = parseFloat(scaled.proteinG.toFixed(1));
+  document.getElementById("portionFluid").textContent = parseFloat(scaled.fluidMl.toFixed(1));
 }
 
 function renderPortionIngredients(){
@@ -4343,10 +4353,10 @@ function renderRecipeSubIngredients(parentIdx){
 function updateRecipeTotals(){
   const totals = calculateRecipeTotals(window.recipeComponents);
   document.getElementById("recipeTotalKcal").textContent = `${totals.calories} ккал`;
-  document.getElementById("recipeTotalProtein").textContent = totals.proteinG;
-  document.getElementById("recipeTotalFluid").textContent = totals.fluidMl;
+  document.getElementById("recipeTotalProtein").textContent = parseFloat(totals.proteinG.toFixed(1));
+  document.getElementById("recipeTotalFluid").textContent = parseFloat(totals.fluidMl.toFixed(1));
   
-  const rawW = totals.weight;
+  const rawW = Math.round(totals.weight);
   document.getElementById("recipeRawWeight").textContent = rawW;
   
   const cookedInput = document.getElementById("recipeCookedWeight");
@@ -4381,8 +4391,8 @@ async function handleRecipeEatNow(){
       category: selectedCat,
       name,
       calories: Math.round(totals.calories / divisor),
-      proteinG: Math.round(totals.proteinG / divisor),
-      fluidMl: Math.round(totals.fluidMl / divisor),
+      proteinG: parseFloat((totals.proteinG / divisor).toFixed(1)),
+      fluidMl: parseFloat((totals.fluidMl / divisor).toFixed(1)),
       portionG: cookedWeight,
       ingredients: JSON.parse(JSON.stringify(window.recipeComponents)),
       isTemporary: true
@@ -4433,7 +4443,7 @@ async function handleRecipeSave(){
     fluidMl: fluid100,
     portionG: cookedWeight,
     weightCoefficient: weightCoeff,
-    usageScore: safeNum(window.modalCurrentScore),
+    usageScore: parseFloat(safeNum(window.recipeCurrentScore).toFixed(2)),
     ingredients: JSON.parse(JSON.stringify(window.recipeComponents)),
     updatedAt: new Date().toISOString()
   };
@@ -5855,7 +5865,7 @@ function wireActivityInputs(){
       } else {
         const kcal = Number(kcalInput.value);
         if(otherMin && kph > 0) {
-          otherMin.value = (kcal * 60 / kph);
+          otherMin.value = parseFloat((kcal * 60 / kph).toFixed(2));
         }
       }
     } else if(minInput){
@@ -5864,7 +5874,7 @@ function wireActivityInputs(){
       } else {
         const min = Number(minInput.value);
         if(otherKcal) {
-          otherKcal.value = (min * kph / 60);
+          otherKcal.value = parseFloat((min * kph / 60).toFixed(2));
         }
       }
     }
@@ -6358,8 +6368,8 @@ function wireRecipeScore() {
   container.addEventListener("click", () => {
     if (container.querySelector("input")) return;
 
-    // For recipe builder, we store the temporary score in window.modalCurrentScore as well
-    const currentVal = window.modalCurrentScore;
+    // Use recipe-specific score state
+    const currentVal = window.recipeCurrentScore;
     container.innerHTML = `<input type="number" step="0.1" style="width: 60px; font-size: 1em; padding: 2px;" id="recipeHeaderScoreInput">`;
     const input = container.querySelector("input");
     input.value = currentVal;
@@ -6368,9 +6378,9 @@ function wireRecipeScore() {
     const commit = () => {
       const newVal = parseFloat(input.value);
       if (!isNaN(newVal)) {
-        window.modalCurrentScore = newVal;
+        window.recipeCurrentScore = newVal;
       }
-      renderHeaderScore(window.modalCurrentScore, "recipeScoreContainer");
+      renderHeaderScore(window.recipeCurrentScore, "recipeScoreContainer");
     };
 
     input.addEventListener("blur", commit);
